@@ -1,0 +1,3926 @@
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m0
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 0
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"main.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.lectura_DHT22,"ax",%progbits
+  20              		.align	2
+  21              		.global	lectura_DHT22
+  22              		.code	16
+  23              		.thumb_func
+  24              		.type	lectura_DHT22, %function
+  25              	lectura_DHT22:
+  26              	.LFB36:
+  27              		.file 1 "main.c"
+   1:main.c        **** /* ========================================
+   2:main.c        ****  *
+   3:main.c        ****  * Copyright YOUR COMPANY, THE YEAR
+   4:main.c        ****  * All Rights Reserved
+   5:main.c        ****  * UNPUBLISHED, LICENSED SOFTWARE.
+   6:main.c        ****  *
+   7:main.c        ****  * CONFIDENTIAL AND PROPRIETARY INFORMATION
+   8:main.c        ****  * WHICH IS THE PROPERTY OF your company.
+   9:main.c        ****  *
+  10:main.c        ****  * ========================================
+  11:main.c        **** */
+  12:main.c        **** 
+  13:main.c        **** #include "project.h"
+  14:main.c        **** #include "stdio.h"
+  15:main.c        **** #include "main.h"
+  16:main.c        **** #include "BLE_APP.h" 
+  17:main.c        **** #include "LiquidCrystal_I2C.h" //Librería de la LCD
+  18:main.c        **** 
+  19:main.c        **** uint32_t Addr = 0x27; //Dirección de la LCD usada
+  20:main.c        **** 
+  21:main.c        **** //Variables del sensor de temperatura y humedad DHT22
+  22:main.c        **** static int temperatura=99;     //Temperatura total
+  23:main.c        **** static int temperatura1=0;     //Primer Byte de temperatura
+  24:main.c        **** static int temperatura2=0;     //Segundo Byte de temperatura
+  25:main.c        **** static int temperaturaant=200; //Temperatura inicial para la comparación
+  26:main.c        **** 
+  27:main.c        **** static int humedad=99;        //Humedad total
+  28:main.c        **** static int humedad1=0;        //Primer Byte de humedad
+  29:main.c        **** static int humedad2=0;        //Segundo Byte de humedad
+  30:main.c        **** static int humedadant=150;    //Humedad inicial para la comparación
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 2
+
+
+  31:main.c        **** 
+  32:main.c        **** //Variables del sensor de proximidad
+  33:main.c        **** extern uint16 CapSense_SensorSignal[CapSense_TOTAL_SENSOR_COUNT];
+  34:main.c        **** 
+  35:main.c        **** #define PROX_RANGE_INIT     50 //Proximidad máxima que se puede medir
+  36:main.c        **** 
+  37:main.c        **** //Variables conexión BLE
+  38:main.c        **** CYBLE_GATTS_HANDLE_VALUE_NTF_T notificationHandle;  //Humedad
+  39:main.c        **** CYBLE_GATTS_HANDLE_VALUE_NTF_T notificationHandle1; //Temperatura
+  40:main.c        **** CYBLE_GATTS_HANDLE_VALUE_NTF_T notificationHandle2; //Proximidad
+  41:main.c        **** CYBLE_CONN_HANDLE_T connectionHandle;
+  42:main.c        **** 
+  43:main.c        **** int lectura_DHT22(){                        //Obtener los datos de temperatura y humedad del sensor
+  28              		.loc 1 43 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 16
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+  33              		.cfi_def_cfa_offset 20
+  34              		.cfi_offset 4, -20
+  35              		.cfi_offset 5, -16
+  36              		.cfi_offset 6, -12
+  37              		.cfi_offset 7, -8
+  38              		.cfi_offset 14, -4
+  39 0002 4746     		mov	r7, r8
+  40 0004 80B4     		push	{r7}
+  41              		.cfi_def_cfa_offset 24
+  42              		.cfi_offset 8, -24
+  43 0006 84B0     		sub	sp, sp, #16
+  44              		.cfi_def_cfa_offset 40
+  45              	.LVL0:
+  44:main.c        ****     
+  45:main.c        ****     //Variables para obtener datos de temperatura y humedad
+  46:main.c        ****     uint8 IState;
+  47:main.c        ****     uint8 bytes[5]; 
+  48:main.c        ****     uint8 cnt = 7; 
+  49:main.c        ****     uint8 idx = 0; 
+  50:main.c        ****     
+  51:main.c        ****     int i;
+  52:main.c        ****     int calc=0; 
+  53:main.c        ****     int timeout=0; 
+  54:main.c        ****     
+  55:main.c        ****     IState=CyEnterCriticalSection();  //Desactiva las interrupciones y devuelve un valor de estado 
+  46              		.loc 1 55 0
+  47 0008 FFF7FEFF 		bl	CyEnterCriticalSection
+  48              	.LVL1:
+  49 000c 0190     		str	r0, [sp, #4]
+  50              	.LVL2:
+  56:main.c        ****    
+  57:main.c        ****     //Se pone a 0 los bytes donde se van a almacenar los datos de humedad y temperatura.
+  58:main.c        ****     for (i=0; i< 5; i++)
+  51              		.loc 1 58 0
+  52 000e 0023     		movs	r3, #0
+  53 0010 03E0     		b	.L2
+  54              	.LVL3:
+  55              	.L3:
+  59:main.c        ****         bytes[i] = 0; 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 3
+
+
+  56              		.loc 1 59 0 discriminator 3
+  57 0012 0022     		movs	r2, #0
+  58 0014 02A9     		add	r1, sp, #8
+  59 0016 CA54     		strb	r2, [r1, r3]
+  58:main.c        ****         bytes[i] = 0; 
+  60              		.loc 1 58 0 discriminator 3
+  61 0018 0133     		adds	r3, r3, #1
+  62              	.LVL4:
+  63              	.L2:
+  58:main.c        ****         bytes[i] = 0; 
+  64              		.loc 1 58 0 is_stmt 0 discriminator 1
+  65 001a 042B     		cmp	r3, #4
+  66 001c F9DD     		ble	.L3
+  60:main.c        ****                         
+  61:main.c        ****     /*Se realiza el "timing" del sensor DHT22, donde 1 representará cuando está arriba y 0 cuando
+  62:main.c        ****     por configuración previa comienza en 1.*/
+  63:main.c        ****         
+  64:main.c        ****     DHT_Write(0u);                    //Se cambia el valor a 0.
+  67              		.loc 1 64 0 is_stmt 1
+  68 001e 0020     		movs	r0, #0
+  69 0020 FFF7FEFF 		bl	DHT_Write
+  70              	.LVL5:
+  65:main.c        ****     CyDelay(19);                      //Estará en 0, 19 milisegundos.
+  71              		.loc 1 65 0
+  72 0024 1320     		movs	r0, #19
+  73 0026 FFF7FEFF 		bl	CyDelay
+  74              	.LVL6:
+  66:main.c        ****     DHT_Write(1u);                    //Se cambia el valor a 1.
+  75              		.loc 1 66 0
+  76 002a 0120     		movs	r0, #1
+  77 002c FFF7FEFF 		bl	DHT_Write
+  78              	.LVL7:
+  53:main.c        ****     
+  79              		.loc 1 53 0
+  80 0030 0026     		movs	r6, #0
+  67:main.c        ****     
+  68:main.c        ****     while(DHT_Read()==1)              //Mientras que este en 1.
+  81              		.loc 1 68 0
+  82 0032 04E0     		b	.L4
+  83              	.LVL8:
+  84              	.L6:
+  69:main.c        ****     { 
+  70:main.c        ****        timeout++;                     //La variable "timeout" aumenta.
+  85              		.loc 1 70 0
+  86 0034 0136     		adds	r6, r6, #1
+  87              	.LVL9:
+  71:main.c        ****        if(timeout>500)                //Si está en 1 más de 500 milisegundos, anuncia un error.
+  88              		.loc 1 71 0
+  89 0036 FA23     		movs	r3, #250
+  90 0038 5B00     		lsls	r3, r3, #1
+  91 003a 9E42     		cmp	r6, r3
+  92 003c 50DC     		bgt	.L5
+  93              	.LVL10:
+  94              	.L4:
+  68:main.c        ****     { 
+  95              		.loc 1 68 0
+  96 003e FFF7FEFF 		bl	DHT_Read
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 4
+
+
+  97              	.LVL11:
+  98 0042 0128     		cmp	r0, #1
+  99 0044 F6D0     		beq	.L6
+ 100 0046 04E0     		b	.L7
+ 101              	.L8:
+  72:main.c        ****            goto r99;                  //Error de funcionamiento del sensor DHT22.
+  73:main.c        ****     } 
+  74:main.c        ****     
+  75:main.c        ****     while(DHT_Read()==0)              //Si en el proceso anterior no da error, el propio sensor deb
+  76:main.c        ****     {         
+  77:main.c        ****        timeout++;                     //Una vez se cambie, la variable "timeout" aumenta de nuevo.
+ 102              		.loc 1 77 0
+ 103 0048 0136     		adds	r6, r6, #1
+ 104              	.LVL12:
+  78:main.c        ****        if(timeout>500)                //Si está en 0 más de 500 milisegundos, anuncia un error.
+ 105              		.loc 1 78 0
+ 106 004a FA23     		movs	r3, #250
+ 107 004c 5B00     		lsls	r3, r3, #1
+ 108 004e 9E42     		cmp	r6, r3
+ 109 0050 46DC     		bgt	.L5
+ 110              	.L7:
+  75:main.c        ****     {         
+ 111              		.loc 1 75 0
+ 112 0052 FFF7FEFF 		bl	DHT_Read
+ 113              	.LVL13:
+ 114 0056 0028     		cmp	r0, #0
+ 115 0058 F6D0     		beq	.L8
+ 116              	.L9:
+  79:main.c        ****            goto r99;                  //Error de funcionamiento del sensor DHT22.
+  80:main.c        ****     } 
+  81:main.c        ****     
+  82:main.c        ****     
+  83:main.c        ****     calc=timeout;                     // Si en el proceso anterior no da error, se iguala el valor 
+  84:main.c        ****     timeout=0;                        // Se actualiza el valor de "timeout" a 0.
+  85:main.c        ****     
+  86:main.c        ****     while(DHT_Read()==1);             // El sensor cambia otra vez el valor a 1 y comienza la lectu
+ 117              		.loc 1 86 0 discriminator 1
+ 118 005a FFF7FEFF 		bl	DHT_Read
+ 119              	.LVL14:
+ 120 005e 0128     		cmp	r0, #1
+ 121 0060 FBD0     		beq	.L9
+ 122 0062 0023     		movs	r3, #0
+ 123 0064 9846     		mov	r8, r3
+ 124 0066 0025     		movs	r5, #0
+ 125 0068 0727     		movs	r7, #7
+ 126 006a 21E0     		b	.L10
+ 127              	.LVL15:
+ 128              	.L11:
+  87:main.c        ****     
+  88:main.c        ****     for (i=0; i<40; i++) { 
+  89:main.c        ****        timeout=0; 
+  90:main.c        ****        while(DHT_Read()==0); 
+ 129              		.loc 1 90 0 discriminator 1
+ 130 006c FFF7FEFF 		bl	DHT_Read
+ 131              	.LVL16:
+ 132 0070 0028     		cmp	r0, #0
+ 133 0072 FBD0     		beq	.L11
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 5
+
+
+ 134 0074 0024     		movs	r4, #0
+ 135 0076 00E0     		b	.L12
+ 136              	.LVL17:
+ 137              	.L13:
+  91:main.c        ****        while(DHT_Read()==1) 
+  92:main.c        ****            timeout++; 
+ 138              		.loc 1 92 0
+ 139 0078 0134     		adds	r4, r4, #1
+ 140              	.LVL18:
+ 141              	.L12:
+  91:main.c        ****        while(DHT_Read()==1) 
+ 142              		.loc 1 91 0
+ 143 007a FFF7FEFF 		bl	DHT_Read
+ 144              	.LVL19:
+ 145 007e 0128     		cmp	r0, #1
+ 146 0080 FAD0     		beq	.L13
+  93:main.c        ****        
+  94:main.c        ****        if ((timeout) > (calc/2)){ 
+ 147              		.loc 1 94 0
+ 148 0082 F30F     		lsrs	r3, r6, #31
+ 149 0084 9B19     		adds	r3, r3, r6
+ 150 0086 5B10     		asrs	r3, r3, #1
+ 151 0088 9C42     		cmp	r4, r3
+ 152 008a 06DD     		ble	.L14
+  95:main.c        ****         bytes[idx] |= (1 << cnt); 
+ 153              		.loc 1 95 0
+ 154 008c 0123     		movs	r3, #1
+ 155 008e BB40     		lsls	r3, r3, r7
+ 156 0090 02AA     		add	r2, sp, #8
+ 157 0092 525D     		ldrb	r2, [r2, r5]
+ 158 0094 1343     		orrs	r3, r2
+ 159 0096 02AA     		add	r2, sp, #8
+ 160 0098 5355     		strb	r3, [r2, r5]
+ 161              	.L14:
+  96:main.c        ****         }
+  97:main.c        ****     
+  98:main.c        ****        if (cnt == 0){
+ 162              		.loc 1 98 0
+ 163 009a 002F     		cmp	r7, #0
+ 164 009c 03D1     		bne	.L15
+ 165              	.LVL20:
+  99:main.c        ****    		cnt = 7;    
+ 100:main.c        ****    		idx++;      
+ 166              		.loc 1 100 0
+ 167 009e 6B1C     		adds	r3, r5, #1
+ 168 00a0 DDB2     		uxtb	r5, r3
+ 169              	.LVL21:
+  99:main.c        ****    		cnt = 7;    
+ 170              		.loc 1 99 0
+ 171 00a2 0737     		adds	r7, r7, #7
+ 172 00a4 01E0     		b	.L16
+ 173              	.LVL22:
+ 174              	.L15:
+ 101:main.c        ****    	    } 
+ 102:main.c        ****     
+ 103:main.c        ****    	    else cnt--; 
+ 175              		.loc 1 103 0
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 6
+
+
+ 176 00a6 013F     		subs	r7, r7, #1
+ 177              	.LVL23:
+ 178 00a8 FFB2     		uxtb	r7, r7
+ 179              	.LVL24:
+ 180              	.L16:
+  88:main.c        ****        timeout=0; 
+ 181              		.loc 1 88 0 discriminator 2
+ 182 00aa 0123     		movs	r3, #1
+ 183 00ac 9C46     		mov	ip, r3
+ 184 00ae E044     		add	r8, r8, ip
+ 185              	.LVL25:
+ 186              	.L10:
+  88:main.c        ****        timeout=0; 
+ 187              		.loc 1 88 0 is_stmt 0 discriminator 1
+ 188 00b0 4346     		mov	r3, r8
+ 189 00b2 272B     		cmp	r3, #39
+ 190 00b4 DADD     		ble	.L11
+ 104:main.c        ****     } 
+ 105:main.c        ****     
+ 106:main.c        ****    //Se asignan los bytes obtenidos a los bytes que pertenecen a humedad y a temperatura.
+ 107:main.c        ****     humedad1    = bytes[0]; 
+ 191              		.loc 1 107 0 is_stmt 1
+ 192 00b6 02AB     		add	r3, sp, #8
+ 193 00b8 1A78     		ldrb	r2, [r3]
+ 108:main.c        ****     humedad2    = bytes[1]; 
+ 194              		.loc 1 108 0
+ 195 00ba 5978     		ldrb	r1, [r3, #1]
+ 109:main.c        ****     temperatura1 = bytes[2]; 
+ 196              		.loc 1 109 0
+ 197 00bc 9B78     		ldrb	r3, [r3, #2]
+ 110:main.c        ****     temperatura2 = bytes[3]; 
+ 198              		.loc 1 110 0
+ 199 00be 02A8     		add	r0, sp, #8
+ 200 00c0 C078     		ldrb	r0, [r0, #3]
+ 111:main.c        ****     
+ 112:main.c        ****     humedad     = humedad1 * 256 + humedad2;          //Cálculo humedad final.
+ 201              		.loc 1 112 0
+ 202 00c2 1202     		lsls	r2, r2, #8
+ 203 00c4 8A18     		adds	r2, r1, r2
+ 204 00c6 0C49     		ldr	r1, .L18
+ 205 00c8 0A60     		str	r2, [r1]
+ 113:main.c        ****     temperatura  = temperatura1 * 256 + temperatura2; //Cálculo temperatura final.
+ 206              		.loc 1 113 0
+ 207 00ca 1B02     		lsls	r3, r3, #8
+ 208 00cc C318     		adds	r3, r0, r3
+ 209 00ce 4B60     		str	r3, [r1, #4]
+ 114:main.c        ****     
+ 115:main.c        ****     CyExitCriticalSection(IState);                    //Restaura el estado de interrupción.
+ 210              		.loc 1 115 0
+ 211 00d0 0198     		ldr	r0, [sp, #4]
+ 212 00d2 FFF7FEFF 		bl	CyExitCriticalSection
+ 213              	.LVL26:
+ 116:main.c        ****     
+ 117:main.c        ****     CyDelay(1); 
+ 214              		.loc 1 117 0
+ 215 00d6 0120     		movs	r0, #1
+ 216 00d8 FFF7FEFF 		bl	CyDelay
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 7
+
+
+ 217              	.LVL27:
+ 118:main.c        ****     return 0;
+ 218              		.loc 1 118 0
+ 219 00dc 0020     		movs	r0, #0
+ 220 00de 07E0     		b	.L17
+ 221              	.LVL28:
+ 222              	.L5:
+ 119:main.c        ****         
+ 120:main.c        ****     r99:                                              //Error en la lectura del sensor DHT22.
+ 121:main.c        ****       
+ 122:main.c        ****        humedad    = 99;                               //Al producirse un error la humedad toma el v
+ 223              		.loc 1 122 0
+ 224 00e0 054B     		ldr	r3, .L18
+ 225 00e2 6322     		movs	r2, #99
+ 226 00e4 1A60     		str	r2, [r3]
+ 123:main.c        ****        temperatura = 99;                              //Al producirse un error la temperatura toma 
+ 227              		.loc 1 123 0
+ 228 00e6 5A60     		str	r2, [r3, #4]
+ 124:main.c        ****        CyExitCriticalSection(IState);                 //Restaura el estado de interrupción.
+ 229              		.loc 1 124 0
+ 230 00e8 0198     		ldr	r0, [sp, #4]
+ 231 00ea FFF7FEFF 		bl	CyExitCriticalSection
+ 232              	.LVL29:
+ 125:main.c        ****        return 99; 
+ 233              		.loc 1 125 0
+ 234 00ee 6320     		movs	r0, #99
+ 235              	.LVL30:
+ 236              	.L17:
+ 126:main.c        **** }
+ 237              		.loc 1 126 0
+ 238 00f0 04B0     		add	sp, sp, #16
+ 239              		@ sp needed
+ 240 00f2 04BC     		pop	{r2}
+ 241 00f4 9046     		mov	r8, r2
+ 242 00f6 F0BD     		pop	{r4, r5, r6, r7, pc}
+ 243              	.L19:
+ 244              		.align	2
+ 245              	.L18:
+ 246 00f8 00000000 		.word	.LANCHOR0
+ 247              		.cfi_endproc
+ 248              	.LFE36:
+ 249              		.size	lectura_DHT22, .-lectura_DHT22
+ 250              		.global	__aeabi_idiv
+ 251              		.section	.text.main,"ax",%progbits
+ 252              		.align	2
+ 253              		.global	main
+ 254              		.code	16
+ 255              		.thumb_func
+ 256              		.type	main, %function
+ 257              	main:
+ 258              	.LFB37:
+ 127:main.c        **** 
+ 128:main.c        **** int main(void)
+ 129:main.c        **** {
+ 259              		.loc 1 129 0
+ 260              		.cfi_startproc
+ 261              		@ args = 0, pretend = 0, frame = 128
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 8
+
+
+ 262              		@ frame_needed = 0, uses_anonymous_args = 0
+ 263 0000 30B5     		push	{r4, r5, lr}
+ 264              		.cfi_def_cfa_offset 12
+ 265              		.cfi_offset 4, -12
+ 266              		.cfi_offset 5, -8
+ 267              		.cfi_offset 14, -4
+ 268 0002 A1B0     		sub	sp, sp, #132
+ 269              		.cfi_def_cfa_offset 144
+ 130:main.c        ****     //Definición de variables de proximidad
+ 131:main.c        ****     int16 proximidad, max_proximidad; 
+ 132:main.c        ****     int16 proximidadant=150;
+ 270              		.loc 1 132 0
+ 271 0004 9622     		movs	r2, #150
+ 272 0006 7E23     		movs	r3, #126
+ 273 0008 6B44     		add	r3, r3, sp
+ 274 000a 1A80     		strh	r2, [r3]
+ 133:main.c        **** 
+ 134:main.c        ****     CyGlobalIntEnable;                                //Habilitar interruptores globales. 
+ 275              		.loc 1 134 0
+ 276              		.syntax divided
+ 277              	@ 134 "main.c" 1
+ 278 000c 62B6     		CPSIE   i
+ 279              	@ 0 "" 2
+ 135:main.c        ****     
+ 136:main.c        ****     //Definición de variables tipo "char" usados para mostrar los datos leidos.
+ 137:main.c        ****     char outputstring[40];                            //Humedad
+ 138:main.c        ****     char outputstring1[40];                           //Temperatura
+ 139:main.c        ****     char outputstring2[40];                           //Proximidad
+ 140:main.c        ****     
+ 141:main.c        ****     I2C_Start();                                      //Inicializamos I2C
+ 280              		.loc 1 141 0
+ 281              		.thumb
+ 282              		.syntax unified
+ 283 000e FFF7FEFF 		bl	I2C_Start
+ 284              	.LVL31:
+ 142:main.c        ****     
+ 143:main.c        ****     LiquidCrystal_I2C_init(Addr,16,2,0);              //Se inicializa la LCD.
+ 285              		.loc 1 143 0
+ 286 0012 814B     		ldr	r3, .L34
+ 287 0014 187A     		ldrb	r0, [r3, #8]
+ 288 0016 0023     		movs	r3, #0
+ 289 0018 0222     		movs	r2, #2
+ 290 001a 1021     		movs	r1, #16
+ 291 001c FFF7FEFF 		bl	LiquidCrystal_I2C_init
+ 292              	.LVL32:
+ 144:main.c        ****    
+ 145:main.c        ****     begin();                                          //Se activa la LCD
+ 293              		.loc 1 145 0
+ 294 0020 FFF7FEFF 		bl	begin
+ 295              	.LVL33:
+ 146:main.c        ****     
+ 147:main.c        ****     CapSense_Start();                                 //Se inicia el "capsense" usado para medir pr
+ 296              		.loc 1 147 0
+ 297 0024 FFF7FEFF 		bl	CapSense_Start
+ 298              	.LVL34:
+ 148:main.c        ****         
+ 149:main.c        ****     CyGlobalIntEnable;                                //Habilitar interruptores globales. 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 9
+
+
+ 299              		.loc 1 149 0
+ 300              		.syntax divided
+ 301              	@ 149 "main.c" 1
+ 302 0028 62B6     		CPSIE   i
+ 303              	@ 0 "" 2
+ 150:main.c        ****     
+ 151:main.c        ****     //Definición de funciones usadas para el sensor de proximidad.
+ 152:main.c        ****     CapSense_EnableWidget(CapSense_SENSOR_PROXIMITYSENSOR0_0__PROX);
+ 304              		.loc 1 152 0
+ 305              		.thumb
+ 306              		.syntax unified
+ 307 002a 0020     		movs	r0, #0
+ 308 002c FFF7FEFF 		bl	CapSense_EnableWidget
+ 309              	.LVL35:
+ 153:main.c        ****     CapSense_InitializeAllBaselines();
+ 310              		.loc 1 153 0
+ 311 0030 FFF7FEFF 		bl	CapSense_InitializeAllBaselines
+ 312              	.LVL36:
+ 154:main.c        ****     CapSense_UpdateEnabledBaselines();
+ 313              		.loc 1 154 0
+ 314 0034 FFF7FEFF 		bl	CapSense_UpdateEnabledBaselines
+ 315              	.LVL37:
+ 155:main.c        ****     CapSense_ScanEnabledWidgets();
+ 316              		.loc 1 155 0
+ 317 0038 FFF7FEFF 		bl	CapSense_ScanEnabledWidgets
+ 318              	.LVL38:
+ 319              	.L21:
+ 156:main.c        ****     while(CapSense_IsBusy()!=0);
+ 320              		.loc 1 156 0 discriminator 1
+ 321 003c FFF7FEFF 		bl	CapSense_IsBusy
+ 322              	.LVL39:
+ 323 0040 0028     		cmp	r0, #0
+ 324 0042 FBD1     		bne	.L21
+ 325              	.LVL40:
+ 157:main.c        ****     
+ 158:main.c        ****     max_proximidad = PROX_RANGE_INIT;                 // Se asigna a la variable "max_proximidad" l
+ 159:main.c        ****     
+ 160:main.c        ****     
+ 161:main.c        ****     CyBle_Start(BLECallBack);                         // Se realiza la llamada al BLE.
+ 326              		.loc 1 161 0
+ 327 0044 7548     		ldr	r0, .L34+4
+ 328 0046 FFF7FEFF 		bl	CyBle_Start
+ 329              	.LVL41:
+ 330              	.L22:
+ 162:main.c        ****     
+ 163:main.c        ****     for(;;)
+ 164:main.c        ****     { 
+ 165:main.c        ****         CyBle_ProcessEvents();
+ 331              		.loc 1 165 0
+ 332 004a FFF7FEFF 		bl	CyBle_ProcessEvents
+ 333              	.LVL42:
+ 166:main.c        ****         
+ 167:main.c        ****         CapSense_UpdateEnabledBaselines();
+ 334              		.loc 1 167 0
+ 335 004e FFF7FEFF 		bl	CapSense_UpdateEnabledBaselines
+ 336              	.LVL43:
+ 168:main.c        ****         CapSense_ScanEnabledWidgets();
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 10
+
+
+ 337              		.loc 1 168 0
+ 338 0052 FFF7FEFF 		bl	CapSense_ScanEnabledWidgets
+ 339              	.LVL44:
+ 340              	.L23:
+ 169:main.c        ****         
+ 170:main.c        ****         while(CapSense_IsBusy()!=0);                      // Mientras capsense esté activo.
+ 341              		.loc 1 170 0 discriminator 1
+ 342 0056 FFF7FEFF 		bl	CapSense_IsBusy
+ 343              	.LVL45:
+ 344 005a 0028     		cmp	r0, #0
+ 345 005c FBD1     		bne	.L23
+ 171:main.c        ****     
+ 172:main.c        ****         proximidad = CapSense_SensorSignal[0];            // Se guarda en la variable "proximidad" 
+ 346              		.loc 1 172 0
+ 347 005e 704B     		ldr	r3, .L34+8
+ 348 0060 0024     		movs	r4, #0
+ 349 0062 1C5F     		ldrsh	r4, [r3, r4]
+ 350              	.LVL46:
+ 173:main.c        ****         
+ 174:main.c        ****         if(proximidad<=0){                                // Si la proximidad leida es menor que 0.
+ 351              		.loc 1 174 0
+ 352 0064 002C     		cmp	r4, #0
+ 353 0066 00DC     		bgt	.L24
+ 175:main.c        ****             proximidad=0;                                 // La proximidad que muestra el sensor es
+ 354              		.loc 1 175 0
+ 355 0068 0024     		movs	r4, #0
+ 356              	.LVL47:
+ 357              	.L24:
+ 176:main.c        ****         }
+ 177:main.c        ****         if(proximidad>max_proximidad){                    // Si la proximidad leida es mayor que el
+ 358              		.loc 1 177 0
+ 359 006a 322C     		cmp	r4, #50
+ 360 006c 00DD     		ble	.L25
+ 178:main.c        ****             proximidad=max_proximidad;                    // La proximidad que muestra el sensor es
+ 361              		.loc 1 178 0
+ 362 006e 3224     		movs	r4, #50
+ 363              	.LVL48:
+ 364              	.L25:
+ 179:main.c        ****         }
+ 180:main.c        ****                
+ 181:main.c        ****          
+ 182:main.c        ****         lectura_DHT22();                                  // Se llama a la función de lectura del 
+ 365              		.loc 1 182 0
+ 366 0070 FFF7FEFF 		bl	lectura_DHT22
+ 367              	.LVL49:
+ 183:main.c        ****         
+ 184:main.c        ****         if(deviceConnected & startNotificationHumidity){  // Si el dispositivo se conecta y se noti
+ 368              		.loc 1 184 0
+ 369 0074 6B4B     		ldr	r3, .L34+12
+ 370 0076 1B78     		ldrb	r3, [r3]
+ 371 0078 6B4A     		ldr	r2, .L34+16
+ 372 007a 1278     		ldrb	r2, [r2]
+ 373 007c 1A42     		tst	r2, r3
+ 374 007e 43D0     		beq	.L26
+ 185:main.c        ****             
+ 186:main.c        ****             humedad = humedad / 10;                       // Se calcula la humedad final que se man
+ 375              		.loc 1 186 0
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 11
+
+
+ 376 0080 654C     		ldr	r4, .L34
+ 377              	.LVL50:
+ 378 0082 0A21     		movs	r1, #10
+ 379 0084 2068     		ldr	r0, [r4]
+ 380 0086 FFF7FEFF 		bl	__aeabi_idiv
+ 381              	.LVL51:
+ 382 008a 2060     		str	r0, [r4]
+ 187:main.c        ****             
+ 188:main.c        ****             if (humedad!=humedadant){                     // Si la humedad leida no es igual al dat
+ 383              		.loc 1 188 0
+ 384 008c E368     		ldr	r3, [r4, #12]
+ 385 008e 9842     		cmp	r0, r3
+ 386 0090 31D0     		beq	.L27
+ 189:main.c        ****                 clear();                                  // Se limpia lo que haya en la LCD.
+ 387              		.loc 1 189 0
+ 388 0092 FFF7FEFF 		bl	clear
+ 389              	.LVL52:
+ 190:main.c        ****                 humedadant=humedad;                       // Se asigna el valor que se va a enviar 
+ 390              		.loc 1 190 0
+ 391 0096 604C     		ldr	r4, .L34
+ 392 0098 2368     		ldr	r3, [r4]
+ 393 009a E360     		str	r3, [r4, #12]
+ 191:main.c        ****                 setCursor(0,0);                               // Primera linea LCD.
+ 394              		.loc 1 191 0
+ 395 009c 0021     		movs	r1, #0
+ 396 009e 0020     		movs	r0, #0
+ 397 00a0 FFF7FEFF 		bl	setCursor
+ 398              	.LVL53:
+ 192:main.c        ****                 LCD_print("  HUMEDAD (%)");                    // Se imprime en la LCD.
+ 399              		.loc 1 192 0
+ 400 00a4 6148     		ldr	r0, .L34+20
+ 401 00a6 FFF7FEFF 		bl	LCD_print
+ 402              	.LVL54:
+ 193:main.c        ****                 sprintf(outputstring, "      %.2i ", humedadant);  // Se muestra en la LCD el valor
+ 403              		.loc 1 193 0
+ 404 00aa E268     		ldr	r2, [r4, #12]
+ 405 00ac 6049     		ldr	r1, .L34+24
+ 406 00ae 15A8     		add	r0, sp, #84
+ 407 00b0 FFF7FEFF 		bl	sprintf
+ 408              	.LVL55:
+ 194:main.c        ****                 setCursor(0,1);                           //Primera linea del LCD
+ 409              		.loc 1 194 0
+ 410 00b4 0121     		movs	r1, #1
+ 411 00b6 0020     		movs	r0, #0
+ 412 00b8 FFF7FEFF 		bl	setCursor
+ 413              	.LVL56:
+ 195:main.c        ****                 LCD_print(outputstring);  
+ 414              		.loc 1 195 0
+ 415 00bc 15A8     		add	r0, sp, #84
+ 416 00be FFF7FEFF 		bl	LCD_print
+ 417              	.LVL57:
+ 196:main.c        ****             
+ 197:main.c        ****                 //Transmisión de datos de humedad por BLE
+ 198:main.c        ****                 notificationHandle.attrHandle = CYBLE_DHT22_HUMIDITY_CHAR_HANDLE;
+ 418              		.loc 1 198 0
+ 419 00c2 5C4D     		ldr	r5, .L34+28
+ 420 00c4 1223     		movs	r3, #18
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 12
+
+
+ 421 00c6 2B81     		strh	r3, [r5, #8]
+ 199:main.c        ****                 notificationHandle.value.val = (uint8*) &humedadant;
+ 422              		.loc 1 199 0
+ 423 00c8 0C34     		adds	r4, r4, #12
+ 424 00ca 2C60     		str	r4, [r5]
+ 200:main.c        ****                 notificationHandle.value.len = 2;
+ 425              		.loc 1 200 0
+ 426 00cc 103B     		subs	r3, r3, #16
+ 427 00ce AB80     		strh	r3, [r5, #4]
+ 201:main.c        ****             
+ 202:main.c        ****                 CyBle_GattsNotification(connectionHandle, &notificationHandle);
+ 428              		.loc 1 202 0
+ 429 00d0 594C     		ldr	r4, .L34+32
+ 430 00d2 2378     		ldrb	r3, [r4]
+ 431 00d4 6078     		ldrb	r0, [r4, #1]
+ 432 00d6 0002     		lsls	r0, r0, #8
+ 433 00d8 1843     		orrs	r0, r3
+ 434 00da 2900     		movs	r1, r5
+ 435 00dc FFF7FEFF 		bl	CyBle_GattsNotification
+ 436              	.LVL58:
+ 203:main.c        ****                 CyDelay(1000);
+ 437              		.loc 1 203 0
+ 438 00e0 FA20     		movs	r0, #250
+ 439 00e2 8000     		lsls	r0, r0, #2
+ 440 00e4 FFF7FEFF 		bl	CyDelay
+ 441              	.LVL59:
+ 204:main.c        ****             
+ 205:main.c        ****                 CyBle_GattsWriteAttributeValue(&notificationHandle,0,&connectionHandle, 0);
+ 442              		.loc 1 205 0
+ 443 00e8 0023     		movs	r3, #0
+ 444 00ea 2200     		movs	r2, r4
+ 445 00ec 0021     		movs	r1, #0
+ 446 00ee 2800     		movs	r0, r5
+ 447 00f0 FFF7FEFF 		bl	CyBle_GattsWriteAttributeValue
+ 448              	.LVL60:
+ 449 00f4 A9E7     		b	.L22
+ 450              	.L27:
+ 206:main.c        ****             }
+ 207:main.c        ****             
+ 208:main.c        ****             else if(humedad==humedadant){                   // Si el dato leido es igual al dato al
+ 451              		.loc 1 208 0
+ 452 00f6 9842     		cmp	r0, r3
+ 453 00f8 A7D1     		bne	.L22
+ 209:main.c        ****                 lectura_DHT22();                            // Se vuelve a leer el dato sin mandar 
+ 454              		.loc 1 209 0
+ 455 00fa FFF7FEFF 		bl	lectura_DHT22
+ 456              	.LVL61:
+ 210:main.c        ****                 CyDelay(1000);                              // Retardo de 1 segundo.
+ 457              		.loc 1 210 0
+ 458 00fe FA20     		movs	r0, #250
+ 459 0100 8000     		lsls	r0, r0, #2
+ 460 0102 FFF7FEFF 		bl	CyDelay
+ 461              	.LVL62:
+ 462 0106 A0E7     		b	.L22
+ 463              	.LVL63:
+ 464              	.L26:
+ 211:main.c        ****             }
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 13
+
+
+ 212:main.c        ****         }
+ 213:main.c        ****         
+ 214:main.c        ****         else if(deviceConnected & startNotificationTemperature){ // Si el dispositivo se conecta y 
+ 465              		.loc 1 214 0
+ 466 0108 4C4A     		ldr	r2, .L34+36
+ 467 010a 1278     		ldrb	r2, [r2]
+ 468 010c 1A42     		tst	r2, r3
+ 469 010e 44D0     		beq	.L29
+ 215:main.c        ****             
+ 216:main.c        ****             temperatura = temperatura / 10;                 // Se calcula la temperatura final que 
+ 470              		.loc 1 216 0
+ 471 0110 414C     		ldr	r4, .L34
+ 472              	.LVL64:
+ 473 0112 0A21     		movs	r1, #10
+ 474 0114 6068     		ldr	r0, [r4, #4]
+ 475 0116 FFF7FEFF 		bl	__aeabi_idiv
+ 476              	.LVL65:
+ 477 011a 6060     		str	r0, [r4, #4]
+ 217:main.c        ****             
+ 218:main.c        ****             if (temperatura!=temperaturaant){               // Si la temperatura leida no es igual 
+ 478              		.loc 1 218 0
+ 479 011c 2369     		ldr	r3, [r4, #16]
+ 480 011e 9842     		cmp	r0, r3
+ 481 0120 31D0     		beq	.L30
+ 219:main.c        ****                 clear();                                    // Se limpia lo que haya en la LCD.
+ 482              		.loc 1 219 0
+ 483 0122 FFF7FEFF 		bl	clear
+ 484              	.LVL66:
+ 220:main.c        ****                 temperaturaant=temperatura;                 // Se asigna el valor que se va a envia
+ 485              		.loc 1 220 0
+ 486 0126 3C4C     		ldr	r4, .L34
+ 487 0128 6368     		ldr	r3, [r4, #4]
+ 488 012a 2361     		str	r3, [r4, #16]
+ 221:main.c        ****                 setCursor(0,0);                               // Primera linea LCD.
+ 489              		.loc 1 221 0
+ 490 012c 0021     		movs	r1, #0
+ 491 012e 0020     		movs	r0, #0
+ 492 0130 FFF7FEFF 		bl	setCursor
+ 493              	.LVL67:
+ 222:main.c        ****                 LCD_print("TEMPERATURA (oC)");                    // Se imprime en la LCD.
+ 494              		.loc 1 222 0
+ 495 0134 4248     		ldr	r0, .L34+40
+ 496 0136 FFF7FEFF 		bl	LCD_print
+ 497              	.LVL68:
+ 223:main.c        ****                 sprintf(outputstring1, "      %.2i", temperaturaant);  // Se muestra en la LCD el v
+ 498              		.loc 1 223 0
+ 499 013a 2269     		ldr	r2, [r4, #16]
+ 500 013c 4149     		ldr	r1, .L34+44
+ 501 013e 0BA8     		add	r0, sp, #44
+ 502 0140 FFF7FEFF 		bl	sprintf
+ 503              	.LVL69:
+ 224:main.c        ****                 setCursor(0,1);                             //Primera linea LCD. 
+ 504              		.loc 1 224 0
+ 505 0144 0121     		movs	r1, #1
+ 506 0146 0020     		movs	r0, #0
+ 507 0148 FFF7FEFF 		bl	setCursor
+ 508              	.LVL70:
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 14
+
+
+ 225:main.c        ****                 LCD_print(outputstring1);
+ 509              		.loc 1 225 0
+ 510 014c 0BA8     		add	r0, sp, #44
+ 511 014e FFF7FEFF 		bl	LCD_print
+ 512              	.LVL71:
+ 226:main.c        ****             
+ 227:main.c        ****                 //Transmisión de datos de temperatura por BLE
+ 228:main.c        ****                 notificationHandle1.attrHandle = CYBLE_DHT22_TEMPERATURE_CHAR_HANDLE;
+ 513              		.loc 1 228 0
+ 514 0152 3D4D     		ldr	r5, .L34+48
+ 515 0154 1623     		movs	r3, #22
+ 516 0156 2B81     		strh	r3, [r5, #8]
+ 229:main.c        ****                 notificationHandle1.value.val = (uint8*) &temperaturaant;
+ 517              		.loc 1 229 0
+ 518 0158 1034     		adds	r4, r4, #16
+ 519 015a 2C60     		str	r4, [r5]
+ 230:main.c        ****                 notificationHandle1.value.len = 2;
+ 520              		.loc 1 230 0
+ 521 015c 143B     		subs	r3, r3, #20
+ 522 015e AB80     		strh	r3, [r5, #4]
+ 231:main.c        ****             
+ 232:main.c        ****                 CyBle_GattsWriteAttributeValue(&notificationHandle1,0,&connectionHandle, 0);
+ 523              		.loc 1 232 0
+ 524 0160 354C     		ldr	r4, .L34+32
+ 525 0162 0023     		movs	r3, #0
+ 526 0164 2200     		movs	r2, r4
+ 527 0166 0021     		movs	r1, #0
+ 528 0168 2800     		movs	r0, r5
+ 529 016a FFF7FEFF 		bl	CyBle_GattsWriteAttributeValue
+ 530              	.LVL72:
+ 233:main.c        ****             
+ 234:main.c        ****                 CyBle_GattsNotification(connectionHandle, &notificationHandle1);
+ 531              		.loc 1 234 0
+ 532 016e 2378     		ldrb	r3, [r4]
+ 533 0170 6078     		ldrb	r0, [r4, #1]
+ 534 0172 0002     		lsls	r0, r0, #8
+ 535 0174 1843     		orrs	r0, r3
+ 536 0176 2900     		movs	r1, r5
+ 537 0178 FFF7FEFF 		bl	CyBle_GattsNotification
+ 538              	.LVL73:
+ 235:main.c        ****                 CyDelay(1000);
+ 539              		.loc 1 235 0
+ 540 017c FA20     		movs	r0, #250
+ 541 017e 8000     		lsls	r0, r0, #2
+ 542 0180 FFF7FEFF 		bl	CyDelay
+ 543              	.LVL74:
+ 544 0184 61E7     		b	.L22
+ 545              	.L30:
+ 236:main.c        ****             }
+ 237:main.c        ****             else if (temperatura==temperaturaant){          // Si el dato leido es igual al dato al
+ 546              		.loc 1 237 0
+ 547 0186 9842     		cmp	r0, r3
+ 548 0188 00D0     		beq	.LCB501
+ 549 018a 5EE7     		b	.L22	@long jump
+ 550              	.LCB501:
+ 238:main.c        ****                 lectura_DHT22();                            // Se vuelve a leer el dato sin mandar 
+ 551              		.loc 1 238 0
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 15
+
+
+ 552 018c FFF7FEFF 		bl	lectura_DHT22
+ 553              	.LVL75:
+ 239:main.c        ****                 CyDelay(1000);                              // Retardo de 1 segundo.
+ 554              		.loc 1 239 0
+ 555 0190 FA20     		movs	r0, #250
+ 556 0192 8000     		lsls	r0, r0, #2
+ 557 0194 FFF7FEFF 		bl	CyDelay
+ 558              	.LVL76:
+ 559 0198 57E7     		b	.L22
+ 560              	.LVL77:
+ 561              	.L29:
+ 240:main.c        ****             }
+ 241:main.c        ****         }
+ 242:main.c        ****         
+ 243:main.c        ****         else if(deviceConnected & startNotificationProximity){ //Solo si cumple esto el sensor capt
+ 562              		.loc 1 243 0
+ 563 019a 2C4A     		ldr	r2, .L34+52
+ 564 019c 1278     		ldrb	r2, [r2]
+ 565 019e 1A42     		tst	r2, r3
+ 566 01a0 00D1     		bne	.LCB518
+ 567 01a2 52E7     		b	.L22	@long jump
+ 568              	.LCB518:
+ 244:main.c        ****             
+ 245:main.c        ****             if (proximidad!=proximidadant){                 // Si el dispositivo se conecta y se no
+ 569              		.loc 1 245 0
+ 570 01a4 7E23     		movs	r3, #126
+ 571 01a6 6B44     		add	r3, r3, sp
+ 572 01a8 0022     		movs	r2, #0
+ 573 01aa 9B5E     		ldrsh	r3, [r3, r2]
+ 574 01ac 9C42     		cmp	r4, r3
+ 575 01ae 2DD0     		beq	.L31
+ 246:main.c        ****             
+ 247:main.c        ****                 proximidadant=proximidad;                   // Si la proximidad leida no es igual a
+ 576              		.loc 1 247 0
+ 577 01b0 7E25     		movs	r5, #126
+ 578 01b2 6D44     		add	r5, r5, sp
+ 579 01b4 2C80     		strh	r4, [r5]
+ 248:main.c        ****                 clear();                                    // Se limpia lo que haya en la LCD.
+ 580              		.loc 1 248 0
+ 581 01b6 FFF7FEFF 		bl	clear
+ 582              	.LVL78:
+ 249:main.c        ****                 setCursor(0,0);                               // Primera linea LCD.
+ 583              		.loc 1 249 0
+ 584 01ba 0021     		movs	r1, #0
+ 585 01bc 0020     		movs	r0, #0
+ 586 01be FFF7FEFF 		bl	setCursor
+ 587              	.LVL79:
+ 250:main.c        ****                 LCD_print("   PROXIMIDAD ");                    // Se imprime en la LCD.
+ 588              		.loc 1 250 0
+ 589 01c2 2348     		ldr	r0, .L34+56
+ 590 01c4 FFF7FEFF 		bl	LCD_print
+ 591              	.LVL80:
+ 251:main.c        ****                 sprintf(outputstring2, "       %d ", proximidadant); // Se muestra en la LCD el val
+ 592              		.loc 1 251 0
+ 593 01c8 0023     		movs	r3, #0
+ 594 01ca EA5E     		ldrsh	r2, [r5, r3]
+ 595 01cc 2149     		ldr	r1, .L34+60
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 16
+
+
+ 596 01ce 01A8     		add	r0, sp, #4
+ 597 01d0 FFF7FEFF 		bl	sprintf
+ 598              	.LVL81:
+ 252:main.c        ****                 setCursor(0,1);                             //Primera linea LCD.
+ 599              		.loc 1 252 0
+ 600 01d4 0121     		movs	r1, #1
+ 601 01d6 0020     		movs	r0, #0
+ 602 01d8 FFF7FEFF 		bl	setCursor
+ 603              	.LVL82:
+ 253:main.c        ****                 LCD_print(outputstring2);
+ 604              		.loc 1 253 0
+ 605 01dc 01A8     		add	r0, sp, #4
+ 606 01de FFF7FEFF 		bl	LCD_print
+ 607              	.LVL83:
+ 254:main.c        ****             
+ 255:main.c        ****                 //Transmisión de datos de proximidad por BLE.
+ 256:main.c        ****                 notificationHandle2.attrHandle = CYBLE_PROX_SENSOR_PROXIMITY_CHAR_HANDLE;
+ 608              		.loc 1 256 0
+ 609 01e2 1D4C     		ldr	r4, .L34+64
+ 610              	.LVL84:
+ 611 01e4 1B23     		movs	r3, #27
+ 612 01e6 2381     		strh	r3, [r4, #8]
+ 257:main.c        ****                 notificationHandle2.value.val = (uint8*) &proximidadant;
+ 613              		.loc 1 257 0
+ 614 01e8 2560     		str	r5, [r4]
+ 258:main.c        ****                 notificationHandle2.value.len = 2;
+ 615              		.loc 1 258 0
+ 616 01ea 193B     		subs	r3, r3, #25
+ 617 01ec A380     		strh	r3, [r4, #4]
+ 259:main.c        ****             
+ 260:main.c        ****                 CyBle_GattsWriteAttributeValue(&notificationHandle2,0,&connectionHandle, 0);
+ 618              		.loc 1 260 0
+ 619 01ee 124D     		ldr	r5, .L34+32
+ 620 01f0 0023     		movs	r3, #0
+ 621 01f2 2A00     		movs	r2, r5
+ 622 01f4 0021     		movs	r1, #0
+ 623 01f6 2000     		movs	r0, r4
+ 624 01f8 FFF7FEFF 		bl	CyBle_GattsWriteAttributeValue
+ 625              	.LVL85:
+ 261:main.c        ****             
+ 262:main.c        ****                 CyBle_GattsNotification(connectionHandle, &notificationHandle2);
+ 626              		.loc 1 262 0
+ 627 01fc 2B78     		ldrb	r3, [r5]
+ 628 01fe 6878     		ldrb	r0, [r5, #1]
+ 629 0200 0002     		lsls	r0, r0, #8
+ 630 0202 1843     		orrs	r0, r3
+ 631 0204 2100     		movs	r1, r4
+ 632 0206 FFF7FEFF 		bl	CyBle_GattsNotification
+ 633              	.LVL86:
+ 634 020a 1EE7     		b	.L22
+ 635              	.LVL87:
+ 636              	.L31:
+ 263:main.c        ****             }
+ 264:main.c        ****             else if (proximidad==proximidadant){            // Si el dato leido es igual al dato al
+ 637              		.loc 1 264 0
+ 638 020c 9C42     		cmp	r4, r3
+ 639 020e 00D0     		beq	.LCB578
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 17
+
+
+ 640 0210 1BE7     		b	.L22	@long jump
+ 641              	.LCB578:
+ 265:main.c        ****                 lectura_DHT22();                            // Se vuelve a leer el dato sin mandar 
+ 642              		.loc 1 265 0
+ 643 0212 FFF7FEFF 		bl	lectura_DHT22
+ 644              	.LVL88:
+ 645 0216 18E7     		b	.L22
+ 646              	.L35:
+ 647              		.align	2
+ 648              	.L34:
+ 649 0218 00000000 		.word	.LANCHOR0
+ 650 021c 00000000 		.word	BLECallBack
+ 651 0220 00000000 		.word	CapSense_sensorSignal
+ 652 0224 00000000 		.word	deviceConnected
+ 653 0228 00000000 		.word	startNotificationHumidity
+ 654 022c 00000000 		.word	.LC6
+ 655 0230 10000000 		.word	.LC8
+ 656 0234 00000000 		.word	notificationHandle
+ 657 0238 00000000 		.word	connectionHandle
+ 658 023c 00000000 		.word	startNotificationTemperature
+ 659 0240 1C000000 		.word	.LC13
+ 660 0244 30000000 		.word	.LC15
+ 661 0248 00000000 		.word	notificationHandle1
+ 662 024c 00000000 		.word	startNotificationProximity
+ 663 0250 3C000000 		.word	.LC19
+ 664 0254 4C000000 		.word	.LC21
+ 665 0258 00000000 		.word	notificationHandle2
+ 666              		.cfi_endproc
+ 667              	.LFE37:
+ 668              		.size	main, .-main
+ 669              		.comm	connectionHandle,2,4
+ 670              		.comm	notificationHandle2,12,4
+ 671              		.comm	notificationHandle1,12,4
+ 672              		.comm	notificationHandle,12,4
+ 673              		.global	Addr
+ 674              		.comm	startNotificationProximity,1,1
+ 675              		.comm	startNotificationTemperature,1,1
+ 676              		.comm	startNotificationHumidity,1,1
+ 677              		.data
+ 678              		.align	2
+ 679              		.set	.LANCHOR0,. + 0
+ 680              		.type	humedad, %object
+ 681              		.size	humedad, 4
+ 682              	humedad:
+ 683 0000 63000000 		.word	99
+ 684              		.type	temperatura, %object
+ 685              		.size	temperatura, 4
+ 686              	temperatura:
+ 687 0004 63000000 		.word	99
+ 688              		.type	Addr, %object
+ 689              		.size	Addr, 4
+ 690              	Addr:
+ 691 0008 27000000 		.word	39
+ 692              		.type	humedadant, %object
+ 693              		.size	humedadant, 4
+ 694              	humedadant:
+ 695 000c 96000000 		.word	150
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 18
+
+
+ 696              		.type	temperaturaant, %object
+ 697              		.size	temperaturaant, 4
+ 698              	temperaturaant:
+ 699 0010 C8000000 		.word	200
+ 700              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 701              		.align	2
+ 702              	.LC6:
+ 703 0000 20204855 		.ascii	"  HUMEDAD (%)\000"
+ 703      4D454441 
+ 703      44202825 
+ 703      2900
+ 704 000e 0000     		.space	2
+ 705              	.LC8:
+ 706 0010 20202020 		.ascii	"      %.2i \000"
+ 706      2020252E 
+ 706      32692000 
+ 707              	.LC13:
+ 708 001c 54454D50 		.ascii	"TEMPERATURA (oC)\000"
+ 708      45524154 
+ 708      55524120 
+ 708      286F4329 
+ 708      00
+ 709 002d 000000   		.space	3
+ 710              	.LC15:
+ 711 0030 20202020 		.ascii	"      %.2i\000"
+ 711      2020252E 
+ 711      326900
+ 712 003b 00       		.space	1
+ 713              	.LC19:
+ 714 003c 20202050 		.ascii	"   PROXIMIDAD \000"
+ 714      524F5849 
+ 714      4D494441 
+ 714      442000
+ 715 004b 00       		.space	1
+ 716              	.LC21:
+ 717 004c 20202020 		.ascii	"       %d \000"
+ 717      20202025 
+ 717      642000
+ 718              		.text
+ 719              	.Letext0:
+ 720              		.file 2 "c:\\program files (x86)\\cypress\\psoc creator\\4.2\\psoc creator\\import\\gnu\\arm\\5.4.
+ 721              		.file 3 "c:\\program files (x86)\\cypress\\psoc creator\\4.2\\psoc creator\\import\\gnu\\arm\\5.4.
+ 722              		.file 4 "Generated_Source\\PSoC4/cytypes.h"
+ 723              		.file 5 "Generated_Source\\PSoC4/BLE_StackGatt.h"
+ 724              		.file 6 "Generated_Source\\PSoC4/BLE_StackGattServer.h"
+ 725              		.file 7 "BLE_APP.h"
+ 726              		.file 8 "Generated_Source\\PSoC4/CyLib.h"
+ 727              		.file 9 "Generated_Source\\PSoC4/DHT.h"
+ 728              		.file 10 "Generated_Source\\PSoC4/I2C.h"
+ 729              		.file 11 "LiquidCrystal_I2C.h"
+ 730              		.file 12 "Generated_Source\\PSoC4/CapSense.h"
+ 731              		.file 13 "Generated_Source\\PSoC4/CapSense_CSHL.h"
+ 732              		.file 14 "Generated_Source\\PSoC4/BLE.h"
+ 733              		.file 15 "Generated_Source\\PSoC4/BLE_Stack.h"
+ 734              		.file 16 "c:\\program files (x86)\\cypress\\psoc creator\\4.2\\psoc creator\\import\\gnu\\arm\\5.4
+ 735              		.file 17 "Generated_Source\\PSoC4/BLE_StackGattDb.h"
+ 736              		.section	.debug_info,"",%progbits
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 19
+
+
+ 737              	.Ldebug_info0:
+ 738 0000 530A0000 		.4byte	0xa53
+ 739 0004 0400     		.2byte	0x4
+ 740 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 741 000a 04       		.byte	0x4
+ 742 000b 01       		.uleb128 0x1
+ 743 000c 3C010000 		.4byte	.LASF151
+ 744 0010 0C       		.byte	0xc
+ 745 0011 27070000 		.4byte	.LASF152
+ 746 0015 4B030000 		.4byte	.LASF153
+ 747 0019 00000000 		.4byte	.Ldebug_ranges0+0
+ 748 001d 00000000 		.4byte	0
+ 749 0021 00000000 		.4byte	.Ldebug_line0
+ 750 0025 02       		.uleb128 0x2
+ 751 0026 01       		.byte	0x1
+ 752 0027 06       		.byte	0x6
+ 753 0028 EB000000 		.4byte	.LASF0
+ 754 002c 02       		.uleb128 0x2
+ 755 002d 01       		.byte	0x1
+ 756 002e 08       		.byte	0x8
+ 757 002f 580A0000 		.4byte	.LASF1
+ 758 0033 02       		.uleb128 0x2
+ 759 0034 02       		.byte	0x2
+ 760 0035 05       		.byte	0x5
+ 761 0036 B30A0000 		.4byte	.LASF2
+ 762 003a 02       		.uleb128 0x2
+ 763 003b 02       		.byte	0x2
+ 764 003c 07       		.byte	0x7
+ 765 003d 83060000 		.4byte	.LASF3
+ 766 0041 02       		.uleb128 0x2
+ 767 0042 04       		.byte	0x4
+ 768 0043 05       		.byte	0x5
+ 769 0044 33010000 		.4byte	.LASF4
+ 770 0048 03       		.uleb128 0x3
+ 771 0049 BC040000 		.4byte	.LASF9
+ 772 004d 02       		.byte	0x2
+ 773 004e 41       		.byte	0x41
+ 774 004f 53000000 		.4byte	0x53
+ 775 0053 02       		.uleb128 0x2
+ 776 0054 04       		.byte	0x4
+ 777 0055 07       		.byte	0x7
+ 778 0056 ED050000 		.4byte	.LASF5
+ 779 005a 02       		.uleb128 0x2
+ 780 005b 08       		.byte	0x8
+ 781 005c 05       		.byte	0x5
+ 782 005d 12030000 		.4byte	.LASF6
+ 783 0061 02       		.uleb128 0x2
+ 784 0062 08       		.byte	0x8
+ 785 0063 07       		.byte	0x7
+ 786 0064 CA010000 		.4byte	.LASF7
+ 787 0068 04       		.uleb128 0x4
+ 788 0069 04       		.byte	0x4
+ 789 006a 05       		.byte	0x5
+ 790 006b 696E7400 		.ascii	"int\000"
+ 791 006f 02       		.uleb128 0x2
+ 792 0070 04       		.byte	0x4
+ 793 0071 07       		.byte	0x7
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 20
+
+
+ 794 0072 EE0B0000 		.4byte	.LASF8
+ 795 0076 03       		.uleb128 0x3
+ 796 0077 C30C0000 		.4byte	.LASF10
+ 797 007b 03       		.byte	0x3
+ 798 007c 30       		.byte	0x30
+ 799 007d 48000000 		.4byte	0x48
+ 800 0081 05       		.uleb128 0x5
+ 801 0082 69040000 		.4byte	.LASF11
+ 802 0086 04       		.byte	0x4
+ 803 0087 E401     		.2byte	0x1e4
+ 804 0089 2C000000 		.4byte	0x2c
+ 805 008d 05       		.uleb128 0x5
+ 806 008e 38000000 		.4byte	.LASF12
+ 807 0092 04       		.byte	0x4
+ 808 0093 E501     		.2byte	0x1e5
+ 809 0095 3A000000 		.4byte	0x3a
+ 810 0099 05       		.uleb128 0x5
+ 811 009a 1A0D0000 		.4byte	.LASF13
+ 812 009e 04       		.byte	0x4
+ 813 009f E801     		.2byte	0x1e8
+ 814 00a1 33000000 		.4byte	0x33
+ 815 00a5 02       		.uleb128 0x2
+ 816 00a6 04       		.byte	0x4
+ 817 00a7 04       		.byte	0x4
+ 818 00a8 4D0A0000 		.4byte	.LASF14
+ 819 00ac 02       		.uleb128 0x2
+ 820 00ad 08       		.byte	0x8
+ 821 00ae 04       		.byte	0x4
+ 822 00af 8E040000 		.4byte	.LASF15
+ 823 00b3 02       		.uleb128 0x2
+ 824 00b4 01       		.byte	0x1
+ 825 00b5 08       		.byte	0x8
+ 826 00b6 A80B0000 		.4byte	.LASF16
+ 827 00ba 02       		.uleb128 0x2
+ 828 00bb 04       		.byte	0x4
+ 829 00bc 07       		.byte	0x7
+ 830 00bd C1080000 		.4byte	.LASF17
+ 831 00c1 02       		.uleb128 0x2
+ 832 00c2 08       		.byte	0x8
+ 833 00c3 04       		.byte	0x4
+ 834 00c4 9C0B0000 		.4byte	.LASF18
+ 835 00c8 06       		.uleb128 0x6
+ 836 00c9 04       		.byte	0x4
+ 837 00ca 81000000 		.4byte	0x81
+ 838 00ce 07       		.uleb128 0x7
+ 839 00cf 01       		.byte	0x1
+ 840 00d0 2C000000 		.4byte	0x2c
+ 841 00d4 0F       		.byte	0xf
+ 842 00d5 3501     		.2byte	0x135
+ 843 00d7 8C020000 		.4byte	0x28c
+ 844 00db 08       		.uleb128 0x8
+ 845 00dc 96060000 		.4byte	.LASF19
+ 846 00e0 00       		.byte	0
+ 847 00e1 08       		.uleb128 0x8
+ 848 00e2 38030000 		.4byte	.LASF20
+ 849 00e6 01       		.byte	0x1
+ 850 00e7 08       		.uleb128 0x8
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 21
+
+
+ 851 00e8 21010000 		.4byte	.LASF21
+ 852 00ec 02       		.byte	0x2
+ 853 00ed 08       		.uleb128 0x8
+ 854 00ee 5A0C0000 		.4byte	.LASF22
+ 855 00f2 03       		.byte	0x3
+ 856 00f3 08       		.uleb128 0x8
+ 857 00f4 F4010000 		.4byte	.LASF23
+ 858 00f8 04       		.byte	0x4
+ 859 00f9 08       		.uleb128 0x8
+ 860 00fa 1C000000 		.4byte	.LASF24
+ 861 00fe 05       		.byte	0x5
+ 862 00ff 08       		.uleb128 0x8
+ 863 0100 CB060000 		.4byte	.LASF25
+ 864 0104 06       		.byte	0x6
+ 865 0105 08       		.uleb128 0x8
+ 866 0106 08080000 		.4byte	.LASF26
+ 867 010a 20       		.byte	0x20
+ 868 010b 08       		.uleb128 0x8
+ 869 010c E0030000 		.4byte	.LASF27
+ 870 0110 21       		.byte	0x21
+ 871 0111 08       		.uleb128 0x8
+ 872 0112 E4060000 		.4byte	.LASF28
+ 873 0116 22       		.byte	0x22
+ 874 0117 08       		.uleb128 0x8
+ 875 0118 91070000 		.4byte	.LASF29
+ 876 011c 23       		.byte	0x23
+ 877 011d 08       		.uleb128 0x8
+ 878 011e 9D090000 		.4byte	.LASF30
+ 879 0122 24       		.byte	0x24
+ 880 0123 08       		.uleb128 0x8
+ 881 0124 E6080000 		.4byte	.LASF31
+ 882 0128 25       		.byte	0x25
+ 883 0129 08       		.uleb128 0x8
+ 884 012a 2E040000 		.4byte	.LASF32
+ 885 012e 26       		.byte	0x26
+ 886 012f 08       		.uleb128 0x8
+ 887 0130 08070000 		.4byte	.LASF33
+ 888 0134 27       		.byte	0x27
+ 889 0135 08       		.uleb128 0x8
+ 890 0136 CC0B0000 		.4byte	.LASF34
+ 891 013a 28       		.byte	0x28
+ 892 013b 08       		.uleb128 0x8
+ 893 013c 1D0B0000 		.4byte	.LASF35
+ 894 0140 29       		.byte	0x29
+ 895 0141 08       		.uleb128 0x8
+ 896 0142 A1000000 		.4byte	.LASF36
+ 897 0146 2A       		.byte	0x2a
+ 898 0147 08       		.uleb128 0x8
+ 899 0148 1F020000 		.4byte	.LASF37
+ 900 014c 2B       		.byte	0x2b
+ 901 014d 08       		.uleb128 0x8
+ 902 014e 470D0000 		.4byte	.LASF38
+ 903 0152 2C       		.byte	0x2c
+ 904 0153 08       		.uleb128 0x8
+ 905 0154 C6020000 		.4byte	.LASF39
+ 906 0158 2D       		.byte	0x2d
+ 907 0159 08       		.uleb128 0x8
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 22
+
+
+ 908 015a 860A0000 		.4byte	.LASF40
+ 909 015e 2E       		.byte	0x2e
+ 910 015f 08       		.uleb128 0x8
+ 911 0160 920C0000 		.4byte	.LASF41
+ 912 0164 2F       		.byte	0x2f
+ 913 0165 08       		.uleb128 0x8
+ 914 0166 3B090000 		.4byte	.LASF42
+ 915 016a 30       		.byte	0x30
+ 916 016b 08       		.uleb128 0x8
+ 917 016c D30D0000 		.4byte	.LASF43
+ 918 0170 31       		.byte	0x31
+ 919 0171 08       		.uleb128 0x8
+ 920 0172 1A090000 		.4byte	.LASF44
+ 921 0176 32       		.byte	0x32
+ 922 0177 08       		.uleb128 0x8
+ 923 0178 750B0000 		.4byte	.LASF45
+ 924 017c 33       		.byte	0x33
+ 925 017d 08       		.uleb128 0x8
+ 926 017e FF050000 		.4byte	.LASF46
+ 927 0182 34       		.byte	0x34
+ 928 0183 08       		.uleb128 0x8
+ 929 0184 0C050000 		.4byte	.LASF47
+ 930 0188 35       		.byte	0x35
+ 931 0189 08       		.uleb128 0x8
+ 932 018a 48070000 		.4byte	.LASF48
+ 933 018e 36       		.byte	0x36
+ 934 018f 08       		.uleb128 0x8
+ 935 0190 4D080000 		.4byte	.LASF49
+ 936 0194 37       		.byte	0x37
+ 937 0195 08       		.uleb128 0x8
+ 938 0196 5B0B0000 		.4byte	.LASF50
+ 939 019a 40       		.byte	0x40
+ 940 019b 08       		.uleb128 0x8
+ 941 019c B7070000 		.4byte	.LASF51
+ 942 01a0 41       		.byte	0x41
+ 943 01a1 08       		.uleb128 0x8
+ 944 01a2 3B0E0000 		.4byte	.LASF52
+ 945 01a6 42       		.byte	0x42
+ 946 01a7 08       		.uleb128 0x8
+ 947 01a8 CC0C0000 		.4byte	.LASF53
+ 948 01ac 43       		.byte	0x43
+ 949 01ad 08       		.uleb128 0x8
+ 950 01ae 1F060000 		.4byte	.LASF54
+ 951 01b2 44       		.byte	0x44
+ 952 01b3 08       		.uleb128 0x8
+ 953 01b4 260A0000 		.4byte	.LASF55
+ 954 01b8 45       		.byte	0x45
+ 955 01b9 08       		.uleb128 0x8
+ 956 01ba A0080000 		.4byte	.LASF56
+ 957 01be 46       		.byte	0x46
+ 958 01bf 08       		.uleb128 0x8
+ 959 01c0 AD060000 		.4byte	.LASF57
+ 960 01c4 47       		.byte	0x47
+ 961 01c5 08       		.uleb128 0x8
+ 962 01c6 200D0000 		.4byte	.LASF58
+ 963 01ca 48       		.byte	0x48
+ 964 01cb 08       		.uleb128 0x8
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 23
+
+
+ 965 01cc F7030000 		.4byte	.LASF59
+ 966 01d0 49       		.byte	0x49
+ 967 01d1 08       		.uleb128 0x8
+ 968 01d2 F20C0000 		.4byte	.LASF60
+ 969 01d6 4A       		.byte	0x4a
+ 970 01d7 08       		.uleb128 0x8
+ 971 01d8 AD0B0000 		.4byte	.LASF61
+ 972 01dc 4B       		.byte	0x4b
+ 973 01dd 08       		.uleb128 0x8
+ 974 01de 2E070000 		.4byte	.LASF62
+ 975 01e2 4C       		.byte	0x4c
+ 976 01e3 08       		.uleb128 0x8
+ 977 01e4 00090000 		.4byte	.LASF63
+ 978 01e8 4D       		.byte	0x4d
+ 979 01e9 08       		.uleb128 0x8
+ 980 01ea 10040000 		.4byte	.LASF64
+ 981 01ee 4E       		.byte	0x4e
+ 982 01ef 08       		.uleb128 0x8
+ 983 01f0 FE0A0000 		.4byte	.LASF65
+ 984 01f4 4F       		.byte	0x4f
+ 985 01f5 08       		.uleb128 0x8
+ 986 01f6 F7000000 		.4byte	.LASF66
+ 987 01fa 50       		.byte	0x50
+ 988 01fb 08       		.uleb128 0x8
+ 989 01fc 6F040000 		.4byte	.LASF67
+ 990 0200 51       		.byte	0x51
+ 991 0201 08       		.uleb128 0x8
+ 992 0202 B9090000 		.4byte	.LASF68
+ 993 0206 52       		.byte	0x52
+ 994 0207 08       		.uleb128 0x8
+ 995 0208 BD0A0000 		.4byte	.LASF69
+ 996 020c 53       		.byte	0x53
+ 997 020d 08       		.uleb128 0x8
+ 998 020e 3A0B0000 		.4byte	.LASF70
+ 999 0212 54       		.byte	0x54
+ 1000 0213 08       		.uleb128 0x8
+ 1001 0214 3D060000 		.4byte	.LASF71
+ 1002 0218 55       		.byte	0x55
+ 1003 0219 08       		.uleb128 0x8
+ 1004 021a 80050000 		.4byte	.LASF72
+ 1005 021e 56       		.byte	0x56
+ 1006 021f 08       		.uleb128 0x8
+ 1007 0220 FB0B0000 		.4byte	.LASF73
+ 1008 0224 57       		.byte	0x57
+ 1009 0225 08       		.uleb128 0x8
+ 1010 0226 4E050000 		.4byte	.LASF74
+ 1011 022a 58       		.byte	0x58
+ 1012 022b 08       		.uleb128 0x8
+ 1013 022c 80020000 		.4byte	.LASF75
+ 1014 0230 70       		.byte	0x70
+ 1015 0231 08       		.uleb128 0x8
+ 1016 0232 A80D0000 		.4byte	.LASF76
+ 1017 0236 71       		.byte	0x71
+ 1018 0237 08       		.uleb128 0x8
+ 1019 0238 EC070000 		.4byte	.LASF77
+ 1020 023c 72       		.byte	0x72
+ 1021 023d 08       		.uleb128 0x8
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 24
+
+
+ 1022 023e 82080000 		.4byte	.LASF78
+ 1023 0242 73       		.byte	0x73
+ 1024 0243 08       		.uleb128 0x8
+ 1025 0244 080A0000 		.4byte	.LASF79
+ 1026 0248 74       		.byte	0x74
+ 1027 0249 08       		.uleb128 0x8
+ 1028 024a 6B0D0000 		.4byte	.LASF80
+ 1029 024e 75       		.byte	0x75
+ 1030 024f 08       		.uleb128 0x8
+ 1031 0250 CA000000 		.4byte	.LASF81
+ 1032 0254 76       		.byte	0x76
+ 1033 0255 08       		.uleb128 0x8
+ 1034 0256 3F000000 		.4byte	.LASF82
+ 1035 025a 77       		.byte	0x77
+ 1036 025b 08       		.uleb128 0x8
+ 1037 025c 240C0000 		.4byte	.LASF83
+ 1038 0260 78       		.byte	0x78
+ 1039 0261 08       		.uleb128 0x8
+ 1040 0262 EF020000 		.4byte	.LASF84
+ 1041 0266 79       		.byte	0x79
+ 1042 0267 08       		.uleb128 0x8
+ 1043 0268 E8040000 		.4byte	.LASF85
+ 1044 026c 7A       		.byte	0x7a
+ 1045 026d 08       		.uleb128 0x8
+ 1046 026e 3E020000 		.4byte	.LASF86
+ 1047 0272 FA       		.byte	0xfa
+ 1048 0273 08       		.uleb128 0x8
+ 1049 0274 C8050000 		.4byte	.LASF87
+ 1050 0278 FB       		.byte	0xfb
+ 1051 0279 08       		.uleb128 0x8
+ 1052 027a DE0A0000 		.4byte	.LASF88
+ 1053 027e FC       		.byte	0xfc
+ 1054 027f 08       		.uleb128 0x8
+ 1055 0280 590E0000 		.4byte	.LASF89
+ 1056 0284 FD       		.byte	0xfd
+ 1057 0285 08       		.uleb128 0x8
+ 1058 0286 AE040000 		.4byte	.LASF90
+ 1059 028a FF       		.byte	0xff
+ 1060 028b 00       		.byte	0
+ 1061 028c 05       		.uleb128 0x5
+ 1062 028d F70D0000 		.4byte	.LASF91
+ 1063 0291 05       		.byte	0x5
+ 1064 0292 8901     		.2byte	0x189
+ 1065 0294 8D000000 		.4byte	0x8d
+ 1066 0298 09       		.uleb128 0x9
+ 1067 0299 02       		.byte	0x2
+ 1068 029a 05       		.byte	0x5
+ 1069 029b 9301     		.2byte	0x193
+ 1070 029d BC020000 		.4byte	0x2bc
+ 1071 02a1 0A       		.uleb128 0xa
+ 1072 02a2 C7040000 		.4byte	.LASF92
+ 1073 02a6 05       		.byte	0x5
+ 1074 02a7 9A01     		.2byte	0x19a
+ 1075 02a9 81000000 		.4byte	0x81
+ 1076 02ad 00       		.byte	0
+ 1077 02ae 0A       		.uleb128 0xa
+ 1078 02af 2C080000 		.4byte	.LASF93
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 25
+
+
+ 1079 02b3 05       		.byte	0x5
+ 1080 02b4 A001     		.2byte	0x1a0
+ 1081 02b6 81000000 		.4byte	0x81
+ 1082 02ba 01       		.byte	0x1
+ 1083 02bb 00       		.byte	0
+ 1084 02bc 05       		.uleb128 0x5
+ 1085 02bd 5E000000 		.4byte	.LASF94
+ 1086 02c1 05       		.byte	0x5
+ 1087 02c2 A201     		.2byte	0x1a2
+ 1088 02c4 98020000 		.4byte	0x298
+ 1089 02c8 09       		.uleb128 0x9
+ 1090 02c9 08       		.byte	0x8
+ 1091 02ca 05       		.byte	0x5
+ 1092 02cb BE01     		.2byte	0x1be
+ 1093 02cd F9020000 		.4byte	0x2f9
+ 1094 02d1 0B       		.uleb128 0xb
+ 1095 02d2 76616C00 		.ascii	"val\000"
+ 1096 02d6 05       		.byte	0x5
+ 1097 02d7 C101     		.2byte	0x1c1
+ 1098 02d9 C8000000 		.4byte	0xc8
+ 1099 02dd 00       		.byte	0
+ 1100 02de 0B       		.uleb128 0xb
+ 1101 02df 6C656E00 		.ascii	"len\000"
+ 1102 02e3 05       		.byte	0x5
+ 1103 02e4 C401     		.2byte	0x1c4
+ 1104 02e6 8D000000 		.4byte	0x8d
+ 1105 02ea 04       		.byte	0x4
+ 1106 02eb 0A       		.uleb128 0xa
+ 1107 02ec D6030000 		.4byte	.LASF95
+ 1108 02f0 05       		.byte	0x5
+ 1109 02f1 CB01     		.2byte	0x1cb
+ 1110 02f3 8D000000 		.4byte	0x8d
+ 1111 02f7 06       		.byte	0x6
+ 1112 02f8 00       		.byte	0
+ 1113 02f9 05       		.uleb128 0x5
+ 1114 02fa E1010000 		.4byte	.LASF96
+ 1115 02fe 05       		.byte	0x5
+ 1116 02ff CD01     		.2byte	0x1cd
+ 1117 0301 C8020000 		.4byte	0x2c8
+ 1118 0305 09       		.uleb128 0x9
+ 1119 0306 0C       		.byte	0xc
+ 1120 0307 05       		.byte	0x5
+ 1121 0308 D001     		.2byte	0x1d0
+ 1122 030a 29030000 		.4byte	0x329
+ 1123 030e 0A       		.uleb128 0xa
+ 1124 030f 29050000 		.4byte	.LASF97
+ 1125 0313 05       		.byte	0x5
+ 1126 0314 D301     		.2byte	0x1d3
+ 1127 0316 F9020000 		.4byte	0x2f9
+ 1128 031a 00       		.byte	0
+ 1129 031b 0A       		.uleb128 0xa
+ 1130 031c D0040000 		.4byte	.LASF98
+ 1131 0320 05       		.byte	0x5
+ 1132 0321 D601     		.2byte	0x1d6
+ 1133 0323 8C020000 		.4byte	0x28c
+ 1134 0327 08       		.byte	0x8
+ 1135 0328 00       		.byte	0
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 26
+
+
+ 1136 0329 05       		.uleb128 0x5
+ 1137 032a DA090000 		.4byte	.LASF99
+ 1138 032e 05       		.byte	0x5
+ 1139 032f D801     		.2byte	0x1d8
+ 1140 0331 05030000 		.4byte	0x305
+ 1141 0335 03       		.uleb128 0x3
+ 1142 0336 730C0000 		.4byte	.LASF100
+ 1143 033a 06       		.byte	0x6
+ 1144 033b 34       		.byte	0x34
+ 1145 033c 29030000 		.4byte	0x329
+ 1146 0340 0C       		.uleb128 0xc
+ 1147 0341 F00A0000 		.4byte	.LASF154
+ 1148 0345 01       		.byte	0x1
+ 1149 0346 2B       		.byte	0x2b
+ 1150 0347 68000000 		.4byte	0x68
+ 1151 034b 00000000 		.4byte	.LFB36
+ 1152 034f FC000000 		.4byte	.LFE36-.LFB36
+ 1153 0353 01       		.uleb128 0x1
+ 1154 0354 9C       		.byte	0x9c
+ 1155 0355 71040000 		.4byte	0x471
+ 1156 0359 0D       		.uleb128 0xd
+ 1157 035a A1040000 		.4byte	.LASF101
+ 1158 035e 01       		.byte	0x1
+ 1159 035f 2E       		.byte	0x2e
+ 1160 0360 81000000 		.4byte	0x81
+ 1161 0364 02       		.uleb128 0x2
+ 1162 0365 91       		.byte	0x91
+ 1163 0366 5C       		.sleb128 -36
+ 1164 0367 0D       		.uleb128 0xd
+ 1165 0368 A8040000 		.4byte	.LASF102
+ 1166 036c 01       		.byte	0x1
+ 1167 036d 2F       		.byte	0x2f
+ 1168 036e 71040000 		.4byte	0x471
+ 1169 0372 02       		.uleb128 0x2
+ 1170 0373 91       		.byte	0x91
+ 1171 0374 60       		.sleb128 -32
+ 1172 0375 0E       		.uleb128 0xe
+ 1173 0376 636E7400 		.ascii	"cnt\000"
+ 1174 037a 01       		.byte	0x1
+ 1175 037b 30       		.byte	0x30
+ 1176 037c 81000000 		.4byte	0x81
+ 1177 0380 00000000 		.4byte	.LLST0
+ 1178 0384 0E       		.uleb128 0xe
+ 1179 0385 69647800 		.ascii	"idx\000"
+ 1180 0389 01       		.byte	0x1
+ 1181 038a 31       		.byte	0x31
+ 1182 038b 81000000 		.4byte	0x81
+ 1183 038f 4D000000 		.4byte	.LLST1
+ 1184 0393 0E       		.uleb128 0xe
+ 1185 0394 6900     		.ascii	"i\000"
+ 1186 0396 01       		.byte	0x1
+ 1187 0397 33       		.byte	0x33
+ 1188 0398 68000000 		.4byte	0x68
+ 1189 039c 78000000 		.4byte	.LLST2
+ 1190 03a0 0F       		.uleb128 0xf
+ 1191 03a1 8C070000 		.4byte	.LASF103
+ 1192 03a5 01       		.byte	0x1
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 27
+
+
+ 1193 03a6 34       		.byte	0x34
+ 1194 03a7 68000000 		.4byte	0x68
+ 1195 03ab 00       		.byte	0
+ 1196 03ac 10       		.uleb128 0x10
+ 1197 03ad 17060000 		.4byte	.LASF104
+ 1198 03b1 01       		.byte	0x1
+ 1199 03b2 35       		.byte	0x35
+ 1200 03b3 68000000 		.4byte	0x68
+ 1201 03b7 A2000000 		.4byte	.LLST3
+ 1202 03bb 11       		.uleb128 0x11
+ 1203 03bc 72393900 		.ascii	"r99\000"
+ 1204 03c0 01       		.byte	0x1
+ 1205 03c1 78       		.byte	0x78
+ 1206 03c2 E0000000 		.4byte	.L5
+ 1207 03c6 12       		.uleb128 0x12
+ 1208 03c7 0C000000 		.4byte	.LVL1
+ 1209 03cb 61090000 		.4byte	0x961
+ 1210 03cf 13       		.uleb128 0x13
+ 1211 03d0 24000000 		.4byte	.LVL5
+ 1212 03d4 6C090000 		.4byte	0x96c
+ 1213 03d8 E2030000 		.4byte	0x3e2
+ 1214 03dc 14       		.uleb128 0x14
+ 1215 03dd 01       		.uleb128 0x1
+ 1216 03de 50       		.byte	0x50
+ 1217 03df 01       		.uleb128 0x1
+ 1218 03e0 30       		.byte	0x30
+ 1219 03e1 00       		.byte	0
+ 1220 03e2 13       		.uleb128 0x13
+ 1221 03e3 2A000000 		.4byte	.LVL6
+ 1222 03e7 77090000 		.4byte	0x977
+ 1223 03eb F5030000 		.4byte	0x3f5
+ 1224 03ef 14       		.uleb128 0x14
+ 1225 03f0 01       		.uleb128 0x1
+ 1226 03f1 50       		.byte	0x50
+ 1227 03f2 01       		.uleb128 0x1
+ 1228 03f3 43       		.byte	0x43
+ 1229 03f4 00       		.byte	0
+ 1230 03f5 13       		.uleb128 0x13
+ 1231 03f6 30000000 		.4byte	.LVL7
+ 1232 03fa 6C090000 		.4byte	0x96c
+ 1233 03fe 08040000 		.4byte	0x408
+ 1234 0402 14       		.uleb128 0x14
+ 1235 0403 01       		.uleb128 0x1
+ 1236 0404 50       		.byte	0x50
+ 1237 0405 01       		.uleb128 0x1
+ 1238 0406 31       		.byte	0x31
+ 1239 0407 00       		.byte	0
+ 1240 0408 12       		.uleb128 0x12
+ 1241 0409 42000000 		.4byte	.LVL11
+ 1242 040d 82090000 		.4byte	0x982
+ 1243 0411 12       		.uleb128 0x12
+ 1244 0412 56000000 		.4byte	.LVL13
+ 1245 0416 82090000 		.4byte	0x982
+ 1246 041a 12       		.uleb128 0x12
+ 1247 041b 5E000000 		.4byte	.LVL14
+ 1248 041f 82090000 		.4byte	0x982
+ 1249 0423 12       		.uleb128 0x12
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 28
+
+
+ 1250 0424 70000000 		.4byte	.LVL16
+ 1251 0428 82090000 		.4byte	0x982
+ 1252 042c 12       		.uleb128 0x12
+ 1253 042d 7E000000 		.4byte	.LVL19
+ 1254 0431 82090000 		.4byte	0x982
+ 1255 0435 13       		.uleb128 0x13
+ 1256 0436 D6000000 		.4byte	.LVL26
+ 1257 043a 8D090000 		.4byte	0x98d
+ 1258 043e 4B040000 		.4byte	0x44b
+ 1259 0442 14       		.uleb128 0x14
+ 1260 0443 01       		.uleb128 0x1
+ 1261 0444 50       		.byte	0x50
+ 1262 0445 04       		.uleb128 0x4
+ 1263 0446 91       		.byte	0x91
+ 1264 0447 5C       		.sleb128 -36
+ 1265 0448 94       		.byte	0x94
+ 1266 0449 01       		.byte	0x1
+ 1267 044a 00       		.byte	0
+ 1268 044b 13       		.uleb128 0x13
+ 1269 044c DC000000 		.4byte	.LVL27
+ 1270 0450 77090000 		.4byte	0x977
+ 1271 0454 5E040000 		.4byte	0x45e
+ 1272 0458 14       		.uleb128 0x14
+ 1273 0459 01       		.uleb128 0x1
+ 1274 045a 50       		.byte	0x50
+ 1275 045b 01       		.uleb128 0x1
+ 1276 045c 31       		.byte	0x31
+ 1277 045d 00       		.byte	0
+ 1278 045e 15       		.uleb128 0x15
+ 1279 045f EE000000 		.4byte	.LVL29
+ 1280 0463 8D090000 		.4byte	0x98d
+ 1281 0467 14       		.uleb128 0x14
+ 1282 0468 01       		.uleb128 0x1
+ 1283 0469 50       		.byte	0x50
+ 1284 046a 04       		.uleb128 0x4
+ 1285 046b 91       		.byte	0x91
+ 1286 046c 5C       		.sleb128 -36
+ 1287 046d 94       		.byte	0x94
+ 1288 046e 01       		.byte	0x1
+ 1289 046f 00       		.byte	0
+ 1290 0470 00       		.byte	0
+ 1291 0471 16       		.uleb128 0x16
+ 1292 0472 81000000 		.4byte	0x81
+ 1293 0476 81040000 		.4byte	0x481
+ 1294 047a 17       		.uleb128 0x17
+ 1295 047b BA000000 		.4byte	0xba
+ 1296 047f 04       		.byte	0x4
+ 1297 0480 00       		.byte	0
+ 1298 0481 18       		.uleb128 0x18
+ 1299 0482 CE0D0000 		.4byte	.LASF155
+ 1300 0486 01       		.byte	0x1
+ 1301 0487 80       		.byte	0x80
+ 1302 0488 68000000 		.4byte	0x68
+ 1303 048c 00000000 		.4byte	.LFB37
+ 1304 0490 5C020000 		.4byte	.LFE37-.LFB37
+ 1305 0494 01       		.uleb128 0x1
+ 1306 0495 9C       		.byte	0x9c
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 29
+
+
+ 1307 0496 33080000 		.4byte	0x833
+ 1308 049a 10       		.uleb128 0x10
+ 1309 049b 16010000 		.4byte	.LASF105
+ 1310 049f 01       		.byte	0x1
+ 1311 04a0 83       		.byte	0x83
+ 1312 04a1 99000000 		.4byte	0x99
+ 1313 04a5 D7000000 		.4byte	.LLST4
+ 1314 04a9 0F       		.uleb128 0xf
+ 1315 04aa F9090000 		.4byte	.LASF106
+ 1316 04ae 01       		.byte	0x1
+ 1317 04af 83       		.byte	0x83
+ 1318 04b0 99000000 		.4byte	0x99
+ 1319 04b4 32       		.byte	0x32
+ 1320 04b5 0D       		.uleb128 0xd
+ 1321 04b6 A2050000 		.4byte	.LASF107
+ 1322 04ba 01       		.byte	0x1
+ 1323 04bb 84       		.byte	0x84
+ 1324 04bc 99000000 		.4byte	0x99
+ 1325 04c0 02       		.uleb128 0x2
+ 1326 04c1 91       		.byte	0x91
+ 1327 04c2 6E       		.sleb128 -18
+ 1328 04c3 0D       		.uleb128 0xd
+ 1329 04c4 DB040000 		.4byte	.LASF108
+ 1330 04c8 01       		.byte	0x1
+ 1331 04c9 89       		.byte	0x89
+ 1332 04ca 33080000 		.4byte	0x833
+ 1333 04ce 02       		.uleb128 0x2
+ 1334 04cf 91       		.byte	0x91
+ 1335 04d0 44       		.sleb128 -60
+ 1336 04d1 0D       		.uleb128 0xd
+ 1337 04d2 00000000 		.4byte	.LASF109
+ 1338 04d6 01       		.byte	0x1
+ 1339 04d7 8A       		.byte	0x8a
+ 1340 04d8 33080000 		.4byte	0x833
+ 1341 04dc 03       		.uleb128 0x3
+ 1342 04dd 91       		.byte	0x91
+ 1343 04de 9C7F     		.sleb128 -100
+ 1344 04e0 0D       		.uleb128 0xd
+ 1345 04e1 0E000000 		.4byte	.LASF110
+ 1346 04e5 01       		.byte	0x1
+ 1347 04e6 8B       		.byte	0x8b
+ 1348 04e7 33080000 		.4byte	0x833
+ 1349 04eb 03       		.uleb128 0x3
+ 1350 04ec 91       		.byte	0x91
+ 1351 04ed F47E     		.sleb128 -140
+ 1352 04ef 12       		.uleb128 0x12
+ 1353 04f0 12000000 		.4byte	.LVL31
+ 1354 04f4 98090000 		.4byte	0x998
+ 1355 04f8 13       		.uleb128 0x13
+ 1356 04f9 20000000 		.4byte	.LVL32
+ 1357 04fd A3090000 		.4byte	0x9a3
+ 1358 0501 15050000 		.4byte	0x515
+ 1359 0505 14       		.uleb128 0x14
+ 1360 0506 01       		.uleb128 0x1
+ 1361 0507 51       		.byte	0x51
+ 1362 0508 01       		.uleb128 0x1
+ 1363 0509 40       		.byte	0x40
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 30
+
+
+ 1364 050a 14       		.uleb128 0x14
+ 1365 050b 01       		.uleb128 0x1
+ 1366 050c 52       		.byte	0x52
+ 1367 050d 01       		.uleb128 0x1
+ 1368 050e 32       		.byte	0x32
+ 1369 050f 14       		.uleb128 0x14
+ 1370 0510 01       		.uleb128 0x1
+ 1371 0511 53       		.byte	0x53
+ 1372 0512 01       		.uleb128 0x1
+ 1373 0513 30       		.byte	0x30
+ 1374 0514 00       		.byte	0
+ 1375 0515 12       		.uleb128 0x12
+ 1376 0516 24000000 		.4byte	.LVL33
+ 1377 051a AE090000 		.4byte	0x9ae
+ 1378 051e 12       		.uleb128 0x12
+ 1379 051f 28000000 		.4byte	.LVL34
+ 1380 0523 B9090000 		.4byte	0x9b9
+ 1381 0527 13       		.uleb128 0x13
+ 1382 0528 30000000 		.4byte	.LVL35
+ 1383 052c C4090000 		.4byte	0x9c4
+ 1384 0530 3A050000 		.4byte	0x53a
+ 1385 0534 14       		.uleb128 0x14
+ 1386 0535 01       		.uleb128 0x1
+ 1387 0536 50       		.byte	0x50
+ 1388 0537 01       		.uleb128 0x1
+ 1389 0538 30       		.byte	0x30
+ 1390 0539 00       		.byte	0
+ 1391 053a 12       		.uleb128 0x12
+ 1392 053b 34000000 		.4byte	.LVL36
+ 1393 053f CF090000 		.4byte	0x9cf
+ 1394 0543 12       		.uleb128 0x12
+ 1395 0544 38000000 		.4byte	.LVL37
+ 1396 0548 DA090000 		.4byte	0x9da
+ 1397 054c 12       		.uleb128 0x12
+ 1398 054d 3C000000 		.4byte	.LVL38
+ 1399 0551 E5090000 		.4byte	0x9e5
+ 1400 0555 12       		.uleb128 0x12
+ 1401 0556 40000000 		.4byte	.LVL39
+ 1402 055a F0090000 		.4byte	0x9f0
+ 1403 055e 12       		.uleb128 0x12
+ 1404 055f 4A000000 		.4byte	.LVL41
+ 1405 0563 FB090000 		.4byte	0x9fb
+ 1406 0567 12       		.uleb128 0x12
+ 1407 0568 4E000000 		.4byte	.LVL42
+ 1408 056c 070A0000 		.4byte	0xa07
+ 1409 0570 12       		.uleb128 0x12
+ 1410 0571 52000000 		.4byte	.LVL43
+ 1411 0575 DA090000 		.4byte	0x9da
+ 1412 0579 12       		.uleb128 0x12
+ 1413 057a 56000000 		.4byte	.LVL44
+ 1414 057e E5090000 		.4byte	0x9e5
+ 1415 0582 12       		.uleb128 0x12
+ 1416 0583 5A000000 		.4byte	.LVL45
+ 1417 0587 F0090000 		.4byte	0x9f0
+ 1418 058b 12       		.uleb128 0x12
+ 1419 058c 74000000 		.4byte	.LVL49
+ 1420 0590 40030000 		.4byte	0x340
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 31
+
+
+ 1421 0594 12       		.uleb128 0x12
+ 1422 0595 96000000 		.4byte	.LVL52
+ 1423 0599 130A0000 		.4byte	0xa13
+ 1424 059d 13       		.uleb128 0x13
+ 1425 059e A4000000 		.4byte	.LVL53
+ 1426 05a2 1E0A0000 		.4byte	0xa1e
+ 1427 05a6 B5050000 		.4byte	0x5b5
+ 1428 05aa 14       		.uleb128 0x14
+ 1429 05ab 01       		.uleb128 0x1
+ 1430 05ac 50       		.byte	0x50
+ 1431 05ad 01       		.uleb128 0x1
+ 1432 05ae 30       		.byte	0x30
+ 1433 05af 14       		.uleb128 0x14
+ 1434 05b0 01       		.uleb128 0x1
+ 1435 05b1 51       		.byte	0x51
+ 1436 05b2 01       		.uleb128 0x1
+ 1437 05b3 30       		.byte	0x30
+ 1438 05b4 00       		.byte	0
+ 1439 05b5 13       		.uleb128 0x13
+ 1440 05b6 AA000000 		.4byte	.LVL54
+ 1441 05ba 290A0000 		.4byte	0xa29
+ 1442 05be CC050000 		.4byte	0x5cc
+ 1443 05c2 14       		.uleb128 0x14
+ 1444 05c3 01       		.uleb128 0x1
+ 1445 05c4 50       		.byte	0x50
+ 1446 05c5 05       		.uleb128 0x5
+ 1447 05c6 03       		.byte	0x3
+ 1448 05c7 00000000 		.4byte	.LC6
+ 1449 05cb 00       		.byte	0
+ 1450 05cc 13       		.uleb128 0x13
+ 1451 05cd B4000000 		.4byte	.LVL55
+ 1452 05d1 340A0000 		.4byte	0xa34
+ 1453 05d5 E9050000 		.4byte	0x5e9
+ 1454 05d9 14       		.uleb128 0x14
+ 1455 05da 01       		.uleb128 0x1
+ 1456 05db 50       		.byte	0x50
+ 1457 05dc 02       		.uleb128 0x2
+ 1458 05dd 91       		.byte	0x91
+ 1459 05de 44       		.sleb128 -60
+ 1460 05df 14       		.uleb128 0x14
+ 1461 05e0 01       		.uleb128 0x1
+ 1462 05e1 51       		.byte	0x51
+ 1463 05e2 05       		.uleb128 0x5
+ 1464 05e3 03       		.byte	0x3
+ 1465 05e4 10000000 		.4byte	.LC8
+ 1466 05e8 00       		.byte	0
+ 1467 05e9 13       		.uleb128 0x13
+ 1468 05ea BC000000 		.4byte	.LVL56
+ 1469 05ee 1E0A0000 		.4byte	0xa1e
+ 1470 05f2 01060000 		.4byte	0x601
+ 1471 05f6 14       		.uleb128 0x14
+ 1472 05f7 01       		.uleb128 0x1
+ 1473 05f8 50       		.byte	0x50
+ 1474 05f9 01       		.uleb128 0x1
+ 1475 05fa 30       		.byte	0x30
+ 1476 05fb 14       		.uleb128 0x14
+ 1477 05fc 01       		.uleb128 0x1
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 32
+
+
+ 1478 05fd 51       		.byte	0x51
+ 1479 05fe 01       		.uleb128 0x1
+ 1480 05ff 31       		.byte	0x31
+ 1481 0600 00       		.byte	0
+ 1482 0601 13       		.uleb128 0x13
+ 1483 0602 C2000000 		.4byte	.LVL57
+ 1484 0606 290A0000 		.4byte	0xa29
+ 1485 060a 15060000 		.4byte	0x615
+ 1486 060e 14       		.uleb128 0x14
+ 1487 060f 01       		.uleb128 0x1
+ 1488 0610 50       		.byte	0x50
+ 1489 0611 02       		.uleb128 0x2
+ 1490 0612 91       		.byte	0x91
+ 1491 0613 44       		.sleb128 -60
+ 1492 0614 00       		.byte	0
+ 1493 0615 13       		.uleb128 0x13
+ 1494 0616 E0000000 		.4byte	.LVL58
+ 1495 061a 3F0A0000 		.4byte	0xa3f
+ 1496 061e 29060000 		.4byte	0x629
+ 1497 0622 14       		.uleb128 0x14
+ 1498 0623 01       		.uleb128 0x1
+ 1499 0624 51       		.byte	0x51
+ 1500 0625 02       		.uleb128 0x2
+ 1501 0626 75       		.byte	0x75
+ 1502 0627 00       		.sleb128 0
+ 1503 0628 00       		.byte	0
+ 1504 0629 13       		.uleb128 0x13
+ 1505 062a E8000000 		.4byte	.LVL59
+ 1506 062e 77090000 		.4byte	0x977
+ 1507 0632 3E060000 		.4byte	0x63e
+ 1508 0636 14       		.uleb128 0x14
+ 1509 0637 01       		.uleb128 0x1
+ 1510 0638 50       		.byte	0x50
+ 1511 0639 03       		.uleb128 0x3
+ 1512 063a 0A       		.byte	0xa
+ 1513 063b E803     		.2byte	0x3e8
+ 1514 063d 00       		.byte	0
+ 1515 063e 13       		.uleb128 0x13
+ 1516 063f F4000000 		.4byte	.LVL60
+ 1517 0643 4A0A0000 		.4byte	0xa4a
+ 1518 0647 62060000 		.4byte	0x662
+ 1519 064b 14       		.uleb128 0x14
+ 1520 064c 01       		.uleb128 0x1
+ 1521 064d 50       		.byte	0x50
+ 1522 064e 02       		.uleb128 0x2
+ 1523 064f 75       		.byte	0x75
+ 1524 0650 00       		.sleb128 0
+ 1525 0651 14       		.uleb128 0x14
+ 1526 0652 01       		.uleb128 0x1
+ 1527 0653 51       		.byte	0x51
+ 1528 0654 01       		.uleb128 0x1
+ 1529 0655 30       		.byte	0x30
+ 1530 0656 14       		.uleb128 0x14
+ 1531 0657 01       		.uleb128 0x1
+ 1532 0658 52       		.byte	0x52
+ 1533 0659 02       		.uleb128 0x2
+ 1534 065a 74       		.byte	0x74
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 33
+
+
+ 1535 065b 00       		.sleb128 0
+ 1536 065c 14       		.uleb128 0x14
+ 1537 065d 01       		.uleb128 0x1
+ 1538 065e 53       		.byte	0x53
+ 1539 065f 01       		.uleb128 0x1
+ 1540 0660 30       		.byte	0x30
+ 1541 0661 00       		.byte	0
+ 1542 0662 12       		.uleb128 0x12
+ 1543 0663 FE000000 		.4byte	.LVL61
+ 1544 0667 40030000 		.4byte	0x340
+ 1545 066b 13       		.uleb128 0x13
+ 1546 066c 06010000 		.4byte	.LVL62
+ 1547 0670 77090000 		.4byte	0x977
+ 1548 0674 80060000 		.4byte	0x680
+ 1549 0678 14       		.uleb128 0x14
+ 1550 0679 01       		.uleb128 0x1
+ 1551 067a 50       		.byte	0x50
+ 1552 067b 03       		.uleb128 0x3
+ 1553 067c 0A       		.byte	0xa
+ 1554 067d E803     		.2byte	0x3e8
+ 1555 067f 00       		.byte	0
+ 1556 0680 12       		.uleb128 0x12
+ 1557 0681 26010000 		.4byte	.LVL66
+ 1558 0685 130A0000 		.4byte	0xa13
+ 1559 0689 13       		.uleb128 0x13
+ 1560 068a 34010000 		.4byte	.LVL67
+ 1561 068e 1E0A0000 		.4byte	0xa1e
+ 1562 0692 A1060000 		.4byte	0x6a1
+ 1563 0696 14       		.uleb128 0x14
+ 1564 0697 01       		.uleb128 0x1
+ 1565 0698 50       		.byte	0x50
+ 1566 0699 01       		.uleb128 0x1
+ 1567 069a 30       		.byte	0x30
+ 1568 069b 14       		.uleb128 0x14
+ 1569 069c 01       		.uleb128 0x1
+ 1570 069d 51       		.byte	0x51
+ 1571 069e 01       		.uleb128 0x1
+ 1572 069f 30       		.byte	0x30
+ 1573 06a0 00       		.byte	0
+ 1574 06a1 13       		.uleb128 0x13
+ 1575 06a2 3A010000 		.4byte	.LVL68
+ 1576 06a6 290A0000 		.4byte	0xa29
+ 1577 06aa B8060000 		.4byte	0x6b8
+ 1578 06ae 14       		.uleb128 0x14
+ 1579 06af 01       		.uleb128 0x1
+ 1580 06b0 50       		.byte	0x50
+ 1581 06b1 05       		.uleb128 0x5
+ 1582 06b2 03       		.byte	0x3
+ 1583 06b3 1C000000 		.4byte	.LC13
+ 1584 06b7 00       		.byte	0
+ 1585 06b8 13       		.uleb128 0x13
+ 1586 06b9 44010000 		.4byte	.LVL69
+ 1587 06bd 340A0000 		.4byte	0xa34
+ 1588 06c1 D6060000 		.4byte	0x6d6
+ 1589 06c5 14       		.uleb128 0x14
+ 1590 06c6 01       		.uleb128 0x1
+ 1591 06c7 50       		.byte	0x50
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 34
+
+
+ 1592 06c8 03       		.uleb128 0x3
+ 1593 06c9 91       		.byte	0x91
+ 1594 06ca 9C7F     		.sleb128 -100
+ 1595 06cc 14       		.uleb128 0x14
+ 1596 06cd 01       		.uleb128 0x1
+ 1597 06ce 51       		.byte	0x51
+ 1598 06cf 05       		.uleb128 0x5
+ 1599 06d0 03       		.byte	0x3
+ 1600 06d1 30000000 		.4byte	.LC15
+ 1601 06d5 00       		.byte	0
+ 1602 06d6 13       		.uleb128 0x13
+ 1603 06d7 4C010000 		.4byte	.LVL70
+ 1604 06db 1E0A0000 		.4byte	0xa1e
+ 1605 06df EE060000 		.4byte	0x6ee
+ 1606 06e3 14       		.uleb128 0x14
+ 1607 06e4 01       		.uleb128 0x1
+ 1608 06e5 50       		.byte	0x50
+ 1609 06e6 01       		.uleb128 0x1
+ 1610 06e7 30       		.byte	0x30
+ 1611 06e8 14       		.uleb128 0x14
+ 1612 06e9 01       		.uleb128 0x1
+ 1613 06ea 51       		.byte	0x51
+ 1614 06eb 01       		.uleb128 0x1
+ 1615 06ec 31       		.byte	0x31
+ 1616 06ed 00       		.byte	0
+ 1617 06ee 13       		.uleb128 0x13
+ 1618 06ef 52010000 		.4byte	.LVL71
+ 1619 06f3 290A0000 		.4byte	0xa29
+ 1620 06f7 03070000 		.4byte	0x703
+ 1621 06fb 14       		.uleb128 0x14
+ 1622 06fc 01       		.uleb128 0x1
+ 1623 06fd 50       		.byte	0x50
+ 1624 06fe 03       		.uleb128 0x3
+ 1625 06ff 91       		.byte	0x91
+ 1626 0700 9C7F     		.sleb128 -100
+ 1627 0702 00       		.byte	0
+ 1628 0703 13       		.uleb128 0x13
+ 1629 0704 6E010000 		.4byte	.LVL72
+ 1630 0708 4A0A0000 		.4byte	0xa4a
+ 1631 070c 27070000 		.4byte	0x727
+ 1632 0710 14       		.uleb128 0x14
+ 1633 0711 01       		.uleb128 0x1
+ 1634 0712 50       		.byte	0x50
+ 1635 0713 02       		.uleb128 0x2
+ 1636 0714 75       		.byte	0x75
+ 1637 0715 00       		.sleb128 0
+ 1638 0716 14       		.uleb128 0x14
+ 1639 0717 01       		.uleb128 0x1
+ 1640 0718 51       		.byte	0x51
+ 1641 0719 01       		.uleb128 0x1
+ 1642 071a 30       		.byte	0x30
+ 1643 071b 14       		.uleb128 0x14
+ 1644 071c 01       		.uleb128 0x1
+ 1645 071d 52       		.byte	0x52
+ 1646 071e 02       		.uleb128 0x2
+ 1647 071f 74       		.byte	0x74
+ 1648 0720 00       		.sleb128 0
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 35
+
+
+ 1649 0721 14       		.uleb128 0x14
+ 1650 0722 01       		.uleb128 0x1
+ 1651 0723 53       		.byte	0x53
+ 1652 0724 01       		.uleb128 0x1
+ 1653 0725 30       		.byte	0x30
+ 1654 0726 00       		.byte	0
+ 1655 0727 13       		.uleb128 0x13
+ 1656 0728 7C010000 		.4byte	.LVL73
+ 1657 072c 3F0A0000 		.4byte	0xa3f
+ 1658 0730 3B070000 		.4byte	0x73b
+ 1659 0734 14       		.uleb128 0x14
+ 1660 0735 01       		.uleb128 0x1
+ 1661 0736 51       		.byte	0x51
+ 1662 0737 02       		.uleb128 0x2
+ 1663 0738 75       		.byte	0x75
+ 1664 0739 00       		.sleb128 0
+ 1665 073a 00       		.byte	0
+ 1666 073b 13       		.uleb128 0x13
+ 1667 073c 84010000 		.4byte	.LVL74
+ 1668 0740 77090000 		.4byte	0x977
+ 1669 0744 50070000 		.4byte	0x750
+ 1670 0748 14       		.uleb128 0x14
+ 1671 0749 01       		.uleb128 0x1
+ 1672 074a 50       		.byte	0x50
+ 1673 074b 03       		.uleb128 0x3
+ 1674 074c 0A       		.byte	0xa
+ 1675 074d E803     		.2byte	0x3e8
+ 1676 074f 00       		.byte	0
+ 1677 0750 12       		.uleb128 0x12
+ 1678 0751 90010000 		.4byte	.LVL75
+ 1679 0755 40030000 		.4byte	0x340
+ 1680 0759 13       		.uleb128 0x13
+ 1681 075a 98010000 		.4byte	.LVL76
+ 1682 075e 77090000 		.4byte	0x977
+ 1683 0762 6E070000 		.4byte	0x76e
+ 1684 0766 14       		.uleb128 0x14
+ 1685 0767 01       		.uleb128 0x1
+ 1686 0768 50       		.byte	0x50
+ 1687 0769 03       		.uleb128 0x3
+ 1688 076a 0A       		.byte	0xa
+ 1689 076b E803     		.2byte	0x3e8
+ 1690 076d 00       		.byte	0
+ 1691 076e 12       		.uleb128 0x12
+ 1692 076f BA010000 		.4byte	.LVL78
+ 1693 0773 130A0000 		.4byte	0xa13
+ 1694 0777 13       		.uleb128 0x13
+ 1695 0778 C2010000 		.4byte	.LVL79
+ 1696 077c 1E0A0000 		.4byte	0xa1e
+ 1697 0780 8F070000 		.4byte	0x78f
+ 1698 0784 14       		.uleb128 0x14
+ 1699 0785 01       		.uleb128 0x1
+ 1700 0786 50       		.byte	0x50
+ 1701 0787 01       		.uleb128 0x1
+ 1702 0788 30       		.byte	0x30
+ 1703 0789 14       		.uleb128 0x14
+ 1704 078a 01       		.uleb128 0x1
+ 1705 078b 51       		.byte	0x51
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 36
+
+
+ 1706 078c 01       		.uleb128 0x1
+ 1707 078d 30       		.byte	0x30
+ 1708 078e 00       		.byte	0
+ 1709 078f 13       		.uleb128 0x13
+ 1710 0790 C8010000 		.4byte	.LVL80
+ 1711 0794 290A0000 		.4byte	0xa29
+ 1712 0798 A6070000 		.4byte	0x7a6
+ 1713 079c 14       		.uleb128 0x14
+ 1714 079d 01       		.uleb128 0x1
+ 1715 079e 50       		.byte	0x50
+ 1716 079f 05       		.uleb128 0x5
+ 1717 07a0 03       		.byte	0x3
+ 1718 07a1 3C000000 		.4byte	.LC19
+ 1719 07a5 00       		.byte	0
+ 1720 07a6 13       		.uleb128 0x13
+ 1721 07a7 D4010000 		.4byte	.LVL81
+ 1722 07ab 340A0000 		.4byte	0xa34
+ 1723 07af C4070000 		.4byte	0x7c4
+ 1724 07b3 14       		.uleb128 0x14
+ 1725 07b4 01       		.uleb128 0x1
+ 1726 07b5 50       		.byte	0x50
+ 1727 07b6 03       		.uleb128 0x3
+ 1728 07b7 91       		.byte	0x91
+ 1729 07b8 F47E     		.sleb128 -140
+ 1730 07ba 14       		.uleb128 0x14
+ 1731 07bb 01       		.uleb128 0x1
+ 1732 07bc 51       		.byte	0x51
+ 1733 07bd 05       		.uleb128 0x5
+ 1734 07be 03       		.byte	0x3
+ 1735 07bf 4C000000 		.4byte	.LC21
+ 1736 07c3 00       		.byte	0
+ 1737 07c4 13       		.uleb128 0x13
+ 1738 07c5 DC010000 		.4byte	.LVL82
+ 1739 07c9 1E0A0000 		.4byte	0xa1e
+ 1740 07cd DC070000 		.4byte	0x7dc
+ 1741 07d1 14       		.uleb128 0x14
+ 1742 07d2 01       		.uleb128 0x1
+ 1743 07d3 50       		.byte	0x50
+ 1744 07d4 01       		.uleb128 0x1
+ 1745 07d5 30       		.byte	0x30
+ 1746 07d6 14       		.uleb128 0x14
+ 1747 07d7 01       		.uleb128 0x1
+ 1748 07d8 51       		.byte	0x51
+ 1749 07d9 01       		.uleb128 0x1
+ 1750 07da 31       		.byte	0x31
+ 1751 07db 00       		.byte	0
+ 1752 07dc 13       		.uleb128 0x13
+ 1753 07dd E2010000 		.4byte	.LVL83
+ 1754 07e1 290A0000 		.4byte	0xa29
+ 1755 07e5 F1070000 		.4byte	0x7f1
+ 1756 07e9 14       		.uleb128 0x14
+ 1757 07ea 01       		.uleb128 0x1
+ 1758 07eb 50       		.byte	0x50
+ 1759 07ec 03       		.uleb128 0x3
+ 1760 07ed 91       		.byte	0x91
+ 1761 07ee F47E     		.sleb128 -140
+ 1762 07f0 00       		.byte	0
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 37
+
+
+ 1763 07f1 13       		.uleb128 0x13
+ 1764 07f2 FC010000 		.4byte	.LVL85
+ 1765 07f6 4A0A0000 		.4byte	0xa4a
+ 1766 07fa 15080000 		.4byte	0x815
+ 1767 07fe 14       		.uleb128 0x14
+ 1768 07ff 01       		.uleb128 0x1
+ 1769 0800 50       		.byte	0x50
+ 1770 0801 02       		.uleb128 0x2
+ 1771 0802 74       		.byte	0x74
+ 1772 0803 00       		.sleb128 0
+ 1773 0804 14       		.uleb128 0x14
+ 1774 0805 01       		.uleb128 0x1
+ 1775 0806 51       		.byte	0x51
+ 1776 0807 01       		.uleb128 0x1
+ 1777 0808 30       		.byte	0x30
+ 1778 0809 14       		.uleb128 0x14
+ 1779 080a 01       		.uleb128 0x1
+ 1780 080b 52       		.byte	0x52
+ 1781 080c 02       		.uleb128 0x2
+ 1782 080d 75       		.byte	0x75
+ 1783 080e 00       		.sleb128 0
+ 1784 080f 14       		.uleb128 0x14
+ 1785 0810 01       		.uleb128 0x1
+ 1786 0811 53       		.byte	0x53
+ 1787 0812 01       		.uleb128 0x1
+ 1788 0813 30       		.byte	0x30
+ 1789 0814 00       		.byte	0
+ 1790 0815 13       		.uleb128 0x13
+ 1791 0816 0A020000 		.4byte	.LVL86
+ 1792 081a 3F0A0000 		.4byte	0xa3f
+ 1793 081e 29080000 		.4byte	0x829
+ 1794 0822 14       		.uleb128 0x14
+ 1795 0823 01       		.uleb128 0x1
+ 1796 0824 51       		.byte	0x51
+ 1797 0825 02       		.uleb128 0x2
+ 1798 0826 74       		.byte	0x74
+ 1799 0827 00       		.sleb128 0
+ 1800 0828 00       		.byte	0
+ 1801 0829 12       		.uleb128 0x12
+ 1802 082a 16020000 		.4byte	.LVL88
+ 1803 082e 40030000 		.4byte	0x340
+ 1804 0832 00       		.byte	0
+ 1805 0833 16       		.uleb128 0x16
+ 1806 0834 B3000000 		.4byte	0xb3
+ 1807 0838 43080000 		.4byte	0x843
+ 1808 083c 17       		.uleb128 0x17
+ 1809 083d BA000000 		.4byte	0xba
+ 1810 0841 27       		.byte	0x27
+ 1811 0842 00       		.byte	0
+ 1812 0843 0D       		.uleb128 0xd
+ 1813 0844 95040000 		.4byte	.LASF111
+ 1814 0848 01       		.byte	0x1
+ 1815 0849 16       		.byte	0x16
+ 1816 084a 68000000 		.4byte	0x68
+ 1817 084e 05       		.uleb128 0x5
+ 1818 084f 03       		.byte	0x3
+ 1819 0850 04000000 		.4byte	temperatura
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 38
+
+
+ 1820 0854 19       		.uleb128 0x19
+ 1821 0855 D2070000 		.4byte	.LASF112
+ 1822 0859 01       		.byte	0x1
+ 1823 085a 17       		.byte	0x17
+ 1824 085b 68000000 		.4byte	0x68
+ 1825 085f 19       		.uleb128 0x19
+ 1826 0860 DF070000 		.4byte	.LASF113
+ 1827 0864 01       		.byte	0x1
+ 1828 0865 18       		.byte	0x18
+ 1829 0866 68000000 		.4byte	0x68
+ 1830 086a 0D       		.uleb128 0xd
+ 1831 086b 71050000 		.4byte	.LASF114
+ 1832 086f 01       		.byte	0x1
+ 1833 0870 19       		.byte	0x19
+ 1834 0871 68000000 		.4byte	0x68
+ 1835 0875 05       		.uleb128 0x5
+ 1836 0876 03       		.byte	0x3
+ 1837 0877 10000000 		.4byte	temperaturaant
+ 1838 087b 0D       		.uleb128 0xd
+ 1839 087c EA0C0000 		.4byte	.LASF115
+ 1840 0880 01       		.byte	0x1
+ 1841 0881 1B       		.byte	0x1b
+ 1842 0882 68000000 		.4byte	0x68
+ 1843 0886 05       		.uleb128 0x5
+ 1844 0887 03       		.byte	0x3
+ 1845 0888 00000000 		.4byte	humedad
+ 1846 088c 19       		.uleb128 0x19
+ 1847 088d BF050000 		.4byte	.LASF116
+ 1848 0891 01       		.byte	0x1
+ 1849 0892 1C       		.byte	0x1c
+ 1850 0893 68000000 		.4byte	0x68
+ 1851 0897 19       		.uleb128 0x19
+ 1852 0898 470C0000 		.4byte	.LASF117
+ 1853 089c 01       		.byte	0x1
+ 1854 089d 1D       		.byte	0x1d
+ 1855 089e 68000000 		.4byte	0x68
+ 1856 08a2 0D       		.uleb128 0xd
+ 1857 08a3 78060000 		.4byte	.LASF118
+ 1858 08a7 01       		.byte	0x1
+ 1859 08a8 1E       		.byte	0x1e
+ 1860 08a9 68000000 		.4byte	0x68
+ 1861 08ad 05       		.uleb128 0x5
+ 1862 08ae 03       		.byte	0x3
+ 1863 08af 0C000000 		.4byte	humedadant
+ 1864 08b3 16       		.uleb128 0x16
+ 1865 08b4 8D000000 		.4byte	0x8d
+ 1866 08b8 C3080000 		.4byte	0x8c3
+ 1867 08bc 17       		.uleb128 0x17
+ 1868 08bd BA000000 		.4byte	0xba
+ 1869 08c1 00       		.byte	0
+ 1870 08c2 00       		.byte	0
+ 1871 08c3 1A       		.uleb128 0x1a
+ 1872 08c4 09020000 		.4byte	.LASF119
+ 1873 08c8 01       		.byte	0x1
+ 1874 08c9 21       		.byte	0x21
+ 1875 08ca B3080000 		.4byte	0x8b3
+ 1876 08ce 1B       		.uleb128 0x1b
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 39
+
+
+ 1877 08cf 5C020000 		.4byte	.LASF120
+ 1878 08d3 07       		.byte	0x7
+ 1879 08d4 11       		.byte	0x11
+ 1880 08d5 81000000 		.4byte	0x81
+ 1881 08d9 05       		.uleb128 0x5
+ 1882 08da 03       		.byte	0x3
+ 1883 08db 00000000 		.4byte	startNotificationHumidity
+ 1884 08df 1B       		.uleb128 0x1b
+ 1885 08e0 6C090000 		.4byte	.LASF121
+ 1886 08e4 07       		.byte	0x7
+ 1887 08e5 12       		.byte	0x12
+ 1888 08e6 81000000 		.4byte	0x81
+ 1889 08ea 05       		.uleb128 0x5
+ 1890 08eb 03       		.byte	0x3
+ 1891 08ec 00000000 		.4byte	startNotificationTemperature
+ 1892 08f0 1B       		.uleb128 0x1b
+ 1893 08f1 32080000 		.4byte	.LASF122
+ 1894 08f5 07       		.byte	0x7
+ 1895 08f6 13       		.byte	0x13
+ 1896 08f7 81000000 		.4byte	0x81
+ 1897 08fb 05       		.uleb128 0x5
+ 1898 08fc 03       		.byte	0x3
+ 1899 08fd 00000000 		.4byte	startNotificationProximity
+ 1900 0901 1A       		.uleb128 0x1a
+ 1901 0902 5C090000 		.4byte	.LASF123
+ 1902 0906 07       		.byte	0x7
+ 1903 0907 14       		.byte	0x14
+ 1904 0908 81000000 		.4byte	0x81
+ 1905 090c 1B       		.uleb128 0x1b
+ 1906 090d 530A0000 		.4byte	.LASF124
+ 1907 0911 01       		.byte	0x1
+ 1908 0912 13       		.byte	0x13
+ 1909 0913 76000000 		.4byte	0x76
+ 1910 0917 05       		.uleb128 0x5
+ 1911 0918 03       		.byte	0x3
+ 1912 0919 00000000 		.4byte	Addr
+ 1913 091d 1B       		.uleb128 0x1b
+ 1914 091e 56040000 		.4byte	.LASF125
+ 1915 0922 01       		.byte	0x1
+ 1916 0923 26       		.byte	0x26
+ 1917 0924 35030000 		.4byte	0x335
+ 1918 0928 05       		.uleb128 0x5
+ 1919 0929 03       		.byte	0x3
+ 1920 092a 00000000 		.4byte	notificationHandle
+ 1921 092e 1B       		.uleb128 0x1b
+ 1922 092f 130E0000 		.4byte	.LASF126
+ 1923 0933 01       		.byte	0x1
+ 1924 0934 27       		.byte	0x27
+ 1925 0935 35030000 		.4byte	0x335
+ 1926 0939 05       		.uleb128 0x5
+ 1927 093a 03       		.byte	0x3
+ 1928 093b 00000000 		.4byte	notificationHandle1
+ 1929 093f 1B       		.uleb128 0x1b
+ 1930 0940 270E0000 		.4byte	.LASF127
+ 1931 0944 01       		.byte	0x1
+ 1932 0945 28       		.byte	0x28
+ 1933 0946 35030000 		.4byte	0x335
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 40
+
+
+ 1934 094a 05       		.uleb128 0x5
+ 1935 094b 03       		.byte	0x3
+ 1936 094c 00000000 		.4byte	notificationHandle2
+ 1937 0950 1B       		.uleb128 0x1b
+ 1938 0951 88000000 		.4byte	.LASF128
+ 1939 0955 01       		.byte	0x1
+ 1940 0956 29       		.byte	0x29
+ 1941 0957 BC020000 		.4byte	0x2bc
+ 1942 095b 05       		.uleb128 0x5
+ 1943 095c 03       		.byte	0x3
+ 1944 095d 00000000 		.4byte	connectionHandle
+ 1945 0961 1C       		.uleb128 0x1c
+ 1946 0962 61060000 		.4byte	.LASF129
+ 1947 0966 61060000 		.4byte	.LASF129
+ 1948 096a 08       		.byte	0x8
+ 1949 096b E5       		.byte	0xe5
+ 1950 096c 1C       		.uleb128 0x1c
+ 1951 096d 810E0000 		.4byte	.LASF130
+ 1952 0971 810E0000 		.4byte	.LASF130
+ 1953 0975 09       		.byte	0x9
+ 1954 0976 33       		.byte	0x33
+ 1955 0977 1C       		.uleb128 0x1c
+ 1956 0978 BB0C0000 		.4byte	.LASF131
+ 1957 097c BB0C0000 		.4byte	.LASF131
+ 1958 0980 08       		.byte	0x8
+ 1959 0981 D9       		.byte	0xd9
+ 1960 0982 1C       		.uleb128 0x1c
+ 1961 0983 AA0A0000 		.4byte	.LASF132
+ 1962 0987 AA0A0000 		.4byte	.LASF132
+ 1963 098b 09       		.byte	0x9
+ 1964 098c 32       		.byte	0x32
+ 1965 098d 1C       		.uleb128 0x1c
+ 1966 098e 72000000 		.4byte	.LASF133
+ 1967 0992 72000000 		.4byte	.LASF133
+ 1968 0996 08       		.byte	0x8
+ 1969 0997 E6       		.byte	0xe6
+ 1970 0998 1C       		.uleb128 0x1c
+ 1971 0999 100D0000 		.4byte	.LASF134
+ 1972 099d 100D0000 		.4byte	.LASF134
+ 1973 09a1 0A       		.byte	0xa
+ 1974 09a2 72       		.byte	0x72
+ 1975 09a3 1C       		.uleb128 0x1c
+ 1976 09a4 75070000 		.4byte	.LASF135
+ 1977 09a8 75070000 		.4byte	.LASF135
+ 1978 09ac 0B       		.byte	0xb
+ 1979 09ad 47       		.byte	0x47
+ 1980 09ae 1C       		.uleb128 0x1c
+ 1981 09af E7050000 		.4byte	.LASF136
+ 1982 09b3 E7050000 		.4byte	.LASF136
+ 1983 09b7 0B       		.byte	0xb
+ 1984 09b8 4E       		.byte	0x4e
+ 1985 09b9 1C       		.uleb128 0x1c
+ 1986 09ba B0050000 		.4byte	.LASF137
+ 1987 09be B0050000 		.4byte	.LASF137
+ 1988 09c2 0C       		.byte	0xc
+ 1989 09c3 95       		.byte	0x95
+ 1990 09c4 1C       		.uleb128 0x1c
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 41
+
+
+ 1991 09c5 CA080000 		.4byte	.LASF138
+ 1992 09c9 CA080000 		.4byte	.LASF138
+ 1993 09cd 0D       		.byte	0xd
+ 1994 09ce D8       		.byte	0xd8
+ 1995 09cf 1C       		.uleb128 0x1c
+ 1996 09d0 660A0000 		.4byte	.LASF139
+ 1997 09d4 660A0000 		.4byte	.LASF139
+ 1998 09d8 0D       		.byte	0xd
+ 1999 09d9 AB       		.byte	0xab
+ 2000 09da 1C       		.uleb128 0x1c
+ 2001 09db A6020000 		.4byte	.LASF140
+ 2002 09df A6020000 		.4byte	.LASF140
+ 2003 09e3 0D       		.byte	0xd
+ 2004 09e4 AF       		.byte	0xaf
+ 2005 09e5 1C       		.uleb128 0x1c
+ 2006 09e6 8C0D0000 		.4byte	.LASF141
+ 2007 09ea 8C0D0000 		.4byte	.LASF141
+ 2008 09ee 0C       		.byte	0xc
+ 2009 09ef 9E       		.byte	0x9e
+ 2010 09f0 1C       		.uleb128 0x1c
+ 2011 09f1 710E0000 		.4byte	.LASF142
+ 2012 09f5 710E0000 		.4byte	.LASF142
+ 2013 09f9 0C       		.byte	0xc
+ 2014 09fa 9B       		.byte	0x9b
+ 2015 09fb 1D       		.uleb128 0x1d
+ 2016 09fc 69070000 		.4byte	.LASF143
+ 2017 0a00 69070000 		.4byte	.LASF143
+ 2018 0a04 0E       		.byte	0xe
+ 2019 0a05 7202     		.2byte	0x272
+ 2020 0a07 1D       		.uleb128 0x1d
+ 2021 0a08 89090000 		.4byte	.LASF144
+ 2022 0a0c 89090000 		.4byte	.LASF144
+ 2023 0a10 0F       		.byte	0xf
+ 2024 0a11 CF07     		.2byte	0x7cf
+ 2025 0a13 1C       		.uleb128 0x1c
+ 2026 0a14 E0080000 		.4byte	.LASF145
+ 2027 0a18 E0080000 		.4byte	.LASF145
+ 2028 0a1c 0B       		.byte	0xb
+ 2029 0a1d 54       		.byte	0x54
+ 2030 0a1e 1C       		.uleb128 0x1c
+ 2031 0a1f 500C0000 		.4byte	.LASF146
+ 2032 0a23 500C0000 		.4byte	.LASF146
+ 2033 0a27 0B       		.byte	0xb
+ 2034 0a28 88       		.byte	0x88
+ 2035 0a29 1C       		.uleb128 0x1c
+ 2036 0a2a 76020000 		.4byte	.LASF147
+ 2037 0a2e 76020000 		.4byte	.LASF147
+ 2038 0a32 0B       		.byte	0xb
+ 2039 0a33 8B       		.byte	0x8b
+ 2040 0a34 1C       		.uleb128 0x1c
+ 2041 0a35 99000000 		.4byte	.LASF148
+ 2042 0a39 99000000 		.4byte	.LASF148
+ 2043 0a3d 10       		.byte	0x10
+ 2044 0a3e E7       		.byte	0xe7
+ 2045 0a3f 1C       		.uleb128 0x1c
+ 2046 0a40 20030000 		.4byte	.LASF149
+ 2047 0a44 20030000 		.4byte	.LASF149
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 42
+
+
+ 2048 0a48 06       		.byte	0x6
+ 2049 0a49 F2       		.byte	0xf2
+ 2050 0a4a 1D       		.uleb128 0x1d
+ 2051 0a4b 2F050000 		.4byte	.LASF150
+ 2052 0a4f 2F050000 		.4byte	.LASF150
+ 2053 0a53 11       		.byte	0x11
+ 2054 0a54 8401     		.2byte	0x184
+ 2055 0a56 00       		.byte	0
+ 2056              		.section	.debug_abbrev,"",%progbits
+ 2057              	.Ldebug_abbrev0:
+ 2058 0000 01       		.uleb128 0x1
+ 2059 0001 11       		.uleb128 0x11
+ 2060 0002 01       		.byte	0x1
+ 2061 0003 25       		.uleb128 0x25
+ 2062 0004 0E       		.uleb128 0xe
+ 2063 0005 13       		.uleb128 0x13
+ 2064 0006 0B       		.uleb128 0xb
+ 2065 0007 03       		.uleb128 0x3
+ 2066 0008 0E       		.uleb128 0xe
+ 2067 0009 1B       		.uleb128 0x1b
+ 2068 000a 0E       		.uleb128 0xe
+ 2069 000b 55       		.uleb128 0x55
+ 2070 000c 17       		.uleb128 0x17
+ 2071 000d 11       		.uleb128 0x11
+ 2072 000e 01       		.uleb128 0x1
+ 2073 000f 10       		.uleb128 0x10
+ 2074 0010 17       		.uleb128 0x17
+ 2075 0011 00       		.byte	0
+ 2076 0012 00       		.byte	0
+ 2077 0013 02       		.uleb128 0x2
+ 2078 0014 24       		.uleb128 0x24
+ 2079 0015 00       		.byte	0
+ 2080 0016 0B       		.uleb128 0xb
+ 2081 0017 0B       		.uleb128 0xb
+ 2082 0018 3E       		.uleb128 0x3e
+ 2083 0019 0B       		.uleb128 0xb
+ 2084 001a 03       		.uleb128 0x3
+ 2085 001b 0E       		.uleb128 0xe
+ 2086 001c 00       		.byte	0
+ 2087 001d 00       		.byte	0
+ 2088 001e 03       		.uleb128 0x3
+ 2089 001f 16       		.uleb128 0x16
+ 2090 0020 00       		.byte	0
+ 2091 0021 03       		.uleb128 0x3
+ 2092 0022 0E       		.uleb128 0xe
+ 2093 0023 3A       		.uleb128 0x3a
+ 2094 0024 0B       		.uleb128 0xb
+ 2095 0025 3B       		.uleb128 0x3b
+ 2096 0026 0B       		.uleb128 0xb
+ 2097 0027 49       		.uleb128 0x49
+ 2098 0028 13       		.uleb128 0x13
+ 2099 0029 00       		.byte	0
+ 2100 002a 00       		.byte	0
+ 2101 002b 04       		.uleb128 0x4
+ 2102 002c 24       		.uleb128 0x24
+ 2103 002d 00       		.byte	0
+ 2104 002e 0B       		.uleb128 0xb
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 43
+
+
+ 2105 002f 0B       		.uleb128 0xb
+ 2106 0030 3E       		.uleb128 0x3e
+ 2107 0031 0B       		.uleb128 0xb
+ 2108 0032 03       		.uleb128 0x3
+ 2109 0033 08       		.uleb128 0x8
+ 2110 0034 00       		.byte	0
+ 2111 0035 00       		.byte	0
+ 2112 0036 05       		.uleb128 0x5
+ 2113 0037 16       		.uleb128 0x16
+ 2114 0038 00       		.byte	0
+ 2115 0039 03       		.uleb128 0x3
+ 2116 003a 0E       		.uleb128 0xe
+ 2117 003b 3A       		.uleb128 0x3a
+ 2118 003c 0B       		.uleb128 0xb
+ 2119 003d 3B       		.uleb128 0x3b
+ 2120 003e 05       		.uleb128 0x5
+ 2121 003f 49       		.uleb128 0x49
+ 2122 0040 13       		.uleb128 0x13
+ 2123 0041 00       		.byte	0
+ 2124 0042 00       		.byte	0
+ 2125 0043 06       		.uleb128 0x6
+ 2126 0044 0F       		.uleb128 0xf
+ 2127 0045 00       		.byte	0
+ 2128 0046 0B       		.uleb128 0xb
+ 2129 0047 0B       		.uleb128 0xb
+ 2130 0048 49       		.uleb128 0x49
+ 2131 0049 13       		.uleb128 0x13
+ 2132 004a 00       		.byte	0
+ 2133 004b 00       		.byte	0
+ 2134 004c 07       		.uleb128 0x7
+ 2135 004d 04       		.uleb128 0x4
+ 2136 004e 01       		.byte	0x1
+ 2137 004f 0B       		.uleb128 0xb
+ 2138 0050 0B       		.uleb128 0xb
+ 2139 0051 49       		.uleb128 0x49
+ 2140 0052 13       		.uleb128 0x13
+ 2141 0053 3A       		.uleb128 0x3a
+ 2142 0054 0B       		.uleb128 0xb
+ 2143 0055 3B       		.uleb128 0x3b
+ 2144 0056 05       		.uleb128 0x5
+ 2145 0057 01       		.uleb128 0x1
+ 2146 0058 13       		.uleb128 0x13
+ 2147 0059 00       		.byte	0
+ 2148 005a 00       		.byte	0
+ 2149 005b 08       		.uleb128 0x8
+ 2150 005c 28       		.uleb128 0x28
+ 2151 005d 00       		.byte	0
+ 2152 005e 03       		.uleb128 0x3
+ 2153 005f 0E       		.uleb128 0xe
+ 2154 0060 1C       		.uleb128 0x1c
+ 2155 0061 0B       		.uleb128 0xb
+ 2156 0062 00       		.byte	0
+ 2157 0063 00       		.byte	0
+ 2158 0064 09       		.uleb128 0x9
+ 2159 0065 13       		.uleb128 0x13
+ 2160 0066 01       		.byte	0x1
+ 2161 0067 0B       		.uleb128 0xb
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 44
+
+
+ 2162 0068 0B       		.uleb128 0xb
+ 2163 0069 3A       		.uleb128 0x3a
+ 2164 006a 0B       		.uleb128 0xb
+ 2165 006b 3B       		.uleb128 0x3b
+ 2166 006c 05       		.uleb128 0x5
+ 2167 006d 01       		.uleb128 0x1
+ 2168 006e 13       		.uleb128 0x13
+ 2169 006f 00       		.byte	0
+ 2170 0070 00       		.byte	0
+ 2171 0071 0A       		.uleb128 0xa
+ 2172 0072 0D       		.uleb128 0xd
+ 2173 0073 00       		.byte	0
+ 2174 0074 03       		.uleb128 0x3
+ 2175 0075 0E       		.uleb128 0xe
+ 2176 0076 3A       		.uleb128 0x3a
+ 2177 0077 0B       		.uleb128 0xb
+ 2178 0078 3B       		.uleb128 0x3b
+ 2179 0079 05       		.uleb128 0x5
+ 2180 007a 49       		.uleb128 0x49
+ 2181 007b 13       		.uleb128 0x13
+ 2182 007c 38       		.uleb128 0x38
+ 2183 007d 0B       		.uleb128 0xb
+ 2184 007e 00       		.byte	0
+ 2185 007f 00       		.byte	0
+ 2186 0080 0B       		.uleb128 0xb
+ 2187 0081 0D       		.uleb128 0xd
+ 2188 0082 00       		.byte	0
+ 2189 0083 03       		.uleb128 0x3
+ 2190 0084 08       		.uleb128 0x8
+ 2191 0085 3A       		.uleb128 0x3a
+ 2192 0086 0B       		.uleb128 0xb
+ 2193 0087 3B       		.uleb128 0x3b
+ 2194 0088 05       		.uleb128 0x5
+ 2195 0089 49       		.uleb128 0x49
+ 2196 008a 13       		.uleb128 0x13
+ 2197 008b 38       		.uleb128 0x38
+ 2198 008c 0B       		.uleb128 0xb
+ 2199 008d 00       		.byte	0
+ 2200 008e 00       		.byte	0
+ 2201 008f 0C       		.uleb128 0xc
+ 2202 0090 2E       		.uleb128 0x2e
+ 2203 0091 01       		.byte	0x1
+ 2204 0092 3F       		.uleb128 0x3f
+ 2205 0093 19       		.uleb128 0x19
+ 2206 0094 03       		.uleb128 0x3
+ 2207 0095 0E       		.uleb128 0xe
+ 2208 0096 3A       		.uleb128 0x3a
+ 2209 0097 0B       		.uleb128 0xb
+ 2210 0098 3B       		.uleb128 0x3b
+ 2211 0099 0B       		.uleb128 0xb
+ 2212 009a 49       		.uleb128 0x49
+ 2213 009b 13       		.uleb128 0x13
+ 2214 009c 11       		.uleb128 0x11
+ 2215 009d 01       		.uleb128 0x1
+ 2216 009e 12       		.uleb128 0x12
+ 2217 009f 06       		.uleb128 0x6
+ 2218 00a0 40       		.uleb128 0x40
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 45
+
+
+ 2219 00a1 18       		.uleb128 0x18
+ 2220 00a2 9742     		.uleb128 0x2117
+ 2221 00a4 19       		.uleb128 0x19
+ 2222 00a5 01       		.uleb128 0x1
+ 2223 00a6 13       		.uleb128 0x13
+ 2224 00a7 00       		.byte	0
+ 2225 00a8 00       		.byte	0
+ 2226 00a9 0D       		.uleb128 0xd
+ 2227 00aa 34       		.uleb128 0x34
+ 2228 00ab 00       		.byte	0
+ 2229 00ac 03       		.uleb128 0x3
+ 2230 00ad 0E       		.uleb128 0xe
+ 2231 00ae 3A       		.uleb128 0x3a
+ 2232 00af 0B       		.uleb128 0xb
+ 2233 00b0 3B       		.uleb128 0x3b
+ 2234 00b1 0B       		.uleb128 0xb
+ 2235 00b2 49       		.uleb128 0x49
+ 2236 00b3 13       		.uleb128 0x13
+ 2237 00b4 02       		.uleb128 0x2
+ 2238 00b5 18       		.uleb128 0x18
+ 2239 00b6 00       		.byte	0
+ 2240 00b7 00       		.byte	0
+ 2241 00b8 0E       		.uleb128 0xe
+ 2242 00b9 34       		.uleb128 0x34
+ 2243 00ba 00       		.byte	0
+ 2244 00bb 03       		.uleb128 0x3
+ 2245 00bc 08       		.uleb128 0x8
+ 2246 00bd 3A       		.uleb128 0x3a
+ 2247 00be 0B       		.uleb128 0xb
+ 2248 00bf 3B       		.uleb128 0x3b
+ 2249 00c0 0B       		.uleb128 0xb
+ 2250 00c1 49       		.uleb128 0x49
+ 2251 00c2 13       		.uleb128 0x13
+ 2252 00c3 02       		.uleb128 0x2
+ 2253 00c4 17       		.uleb128 0x17
+ 2254 00c5 00       		.byte	0
+ 2255 00c6 00       		.byte	0
+ 2256 00c7 0F       		.uleb128 0xf
+ 2257 00c8 34       		.uleb128 0x34
+ 2258 00c9 00       		.byte	0
+ 2259 00ca 03       		.uleb128 0x3
+ 2260 00cb 0E       		.uleb128 0xe
+ 2261 00cc 3A       		.uleb128 0x3a
+ 2262 00cd 0B       		.uleb128 0xb
+ 2263 00ce 3B       		.uleb128 0x3b
+ 2264 00cf 0B       		.uleb128 0xb
+ 2265 00d0 49       		.uleb128 0x49
+ 2266 00d1 13       		.uleb128 0x13
+ 2267 00d2 1C       		.uleb128 0x1c
+ 2268 00d3 0B       		.uleb128 0xb
+ 2269 00d4 00       		.byte	0
+ 2270 00d5 00       		.byte	0
+ 2271 00d6 10       		.uleb128 0x10
+ 2272 00d7 34       		.uleb128 0x34
+ 2273 00d8 00       		.byte	0
+ 2274 00d9 03       		.uleb128 0x3
+ 2275 00da 0E       		.uleb128 0xe
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 46
+
+
+ 2276 00db 3A       		.uleb128 0x3a
+ 2277 00dc 0B       		.uleb128 0xb
+ 2278 00dd 3B       		.uleb128 0x3b
+ 2279 00de 0B       		.uleb128 0xb
+ 2280 00df 49       		.uleb128 0x49
+ 2281 00e0 13       		.uleb128 0x13
+ 2282 00e1 02       		.uleb128 0x2
+ 2283 00e2 17       		.uleb128 0x17
+ 2284 00e3 00       		.byte	0
+ 2285 00e4 00       		.byte	0
+ 2286 00e5 11       		.uleb128 0x11
+ 2287 00e6 0A       		.uleb128 0xa
+ 2288 00e7 00       		.byte	0
+ 2289 00e8 03       		.uleb128 0x3
+ 2290 00e9 08       		.uleb128 0x8
+ 2291 00ea 3A       		.uleb128 0x3a
+ 2292 00eb 0B       		.uleb128 0xb
+ 2293 00ec 3B       		.uleb128 0x3b
+ 2294 00ed 0B       		.uleb128 0xb
+ 2295 00ee 11       		.uleb128 0x11
+ 2296 00ef 01       		.uleb128 0x1
+ 2297 00f0 00       		.byte	0
+ 2298 00f1 00       		.byte	0
+ 2299 00f2 12       		.uleb128 0x12
+ 2300 00f3 898201   		.uleb128 0x4109
+ 2301 00f6 00       		.byte	0
+ 2302 00f7 11       		.uleb128 0x11
+ 2303 00f8 01       		.uleb128 0x1
+ 2304 00f9 31       		.uleb128 0x31
+ 2305 00fa 13       		.uleb128 0x13
+ 2306 00fb 00       		.byte	0
+ 2307 00fc 00       		.byte	0
+ 2308 00fd 13       		.uleb128 0x13
+ 2309 00fe 898201   		.uleb128 0x4109
+ 2310 0101 01       		.byte	0x1
+ 2311 0102 11       		.uleb128 0x11
+ 2312 0103 01       		.uleb128 0x1
+ 2313 0104 31       		.uleb128 0x31
+ 2314 0105 13       		.uleb128 0x13
+ 2315 0106 01       		.uleb128 0x1
+ 2316 0107 13       		.uleb128 0x13
+ 2317 0108 00       		.byte	0
+ 2318 0109 00       		.byte	0
+ 2319 010a 14       		.uleb128 0x14
+ 2320 010b 8A8201   		.uleb128 0x410a
+ 2321 010e 00       		.byte	0
+ 2322 010f 02       		.uleb128 0x2
+ 2323 0110 18       		.uleb128 0x18
+ 2324 0111 9142     		.uleb128 0x2111
+ 2325 0113 18       		.uleb128 0x18
+ 2326 0114 00       		.byte	0
+ 2327 0115 00       		.byte	0
+ 2328 0116 15       		.uleb128 0x15
+ 2329 0117 898201   		.uleb128 0x4109
+ 2330 011a 01       		.byte	0x1
+ 2331 011b 11       		.uleb128 0x11
+ 2332 011c 01       		.uleb128 0x1
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 47
+
+
+ 2333 011d 31       		.uleb128 0x31
+ 2334 011e 13       		.uleb128 0x13
+ 2335 011f 00       		.byte	0
+ 2336 0120 00       		.byte	0
+ 2337 0121 16       		.uleb128 0x16
+ 2338 0122 01       		.uleb128 0x1
+ 2339 0123 01       		.byte	0x1
+ 2340 0124 49       		.uleb128 0x49
+ 2341 0125 13       		.uleb128 0x13
+ 2342 0126 01       		.uleb128 0x1
+ 2343 0127 13       		.uleb128 0x13
+ 2344 0128 00       		.byte	0
+ 2345 0129 00       		.byte	0
+ 2346 012a 17       		.uleb128 0x17
+ 2347 012b 21       		.uleb128 0x21
+ 2348 012c 00       		.byte	0
+ 2349 012d 49       		.uleb128 0x49
+ 2350 012e 13       		.uleb128 0x13
+ 2351 012f 2F       		.uleb128 0x2f
+ 2352 0130 0B       		.uleb128 0xb
+ 2353 0131 00       		.byte	0
+ 2354 0132 00       		.byte	0
+ 2355 0133 18       		.uleb128 0x18
+ 2356 0134 2E       		.uleb128 0x2e
+ 2357 0135 01       		.byte	0x1
+ 2358 0136 3F       		.uleb128 0x3f
+ 2359 0137 19       		.uleb128 0x19
+ 2360 0138 03       		.uleb128 0x3
+ 2361 0139 0E       		.uleb128 0xe
+ 2362 013a 3A       		.uleb128 0x3a
+ 2363 013b 0B       		.uleb128 0xb
+ 2364 013c 3B       		.uleb128 0x3b
+ 2365 013d 0B       		.uleb128 0xb
+ 2366 013e 27       		.uleb128 0x27
+ 2367 013f 19       		.uleb128 0x19
+ 2368 0140 49       		.uleb128 0x49
+ 2369 0141 13       		.uleb128 0x13
+ 2370 0142 8701     		.uleb128 0x87
+ 2371 0144 19       		.uleb128 0x19
+ 2372 0145 11       		.uleb128 0x11
+ 2373 0146 01       		.uleb128 0x1
+ 2374 0147 12       		.uleb128 0x12
+ 2375 0148 06       		.uleb128 0x6
+ 2376 0149 40       		.uleb128 0x40
+ 2377 014a 18       		.uleb128 0x18
+ 2378 014b 9642     		.uleb128 0x2116
+ 2379 014d 19       		.uleb128 0x19
+ 2380 014e 01       		.uleb128 0x1
+ 2381 014f 13       		.uleb128 0x13
+ 2382 0150 00       		.byte	0
+ 2383 0151 00       		.byte	0
+ 2384 0152 19       		.uleb128 0x19
+ 2385 0153 34       		.uleb128 0x34
+ 2386 0154 00       		.byte	0
+ 2387 0155 03       		.uleb128 0x3
+ 2388 0156 0E       		.uleb128 0xe
+ 2389 0157 3A       		.uleb128 0x3a
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 48
+
+
+ 2390 0158 0B       		.uleb128 0xb
+ 2391 0159 3B       		.uleb128 0x3b
+ 2392 015a 0B       		.uleb128 0xb
+ 2393 015b 49       		.uleb128 0x49
+ 2394 015c 13       		.uleb128 0x13
+ 2395 015d 00       		.byte	0
+ 2396 015e 00       		.byte	0
+ 2397 015f 1A       		.uleb128 0x1a
+ 2398 0160 34       		.uleb128 0x34
+ 2399 0161 00       		.byte	0
+ 2400 0162 03       		.uleb128 0x3
+ 2401 0163 0E       		.uleb128 0xe
+ 2402 0164 3A       		.uleb128 0x3a
+ 2403 0165 0B       		.uleb128 0xb
+ 2404 0166 3B       		.uleb128 0x3b
+ 2405 0167 0B       		.uleb128 0xb
+ 2406 0168 49       		.uleb128 0x49
+ 2407 0169 13       		.uleb128 0x13
+ 2408 016a 3F       		.uleb128 0x3f
+ 2409 016b 19       		.uleb128 0x19
+ 2410 016c 3C       		.uleb128 0x3c
+ 2411 016d 19       		.uleb128 0x19
+ 2412 016e 00       		.byte	0
+ 2413 016f 00       		.byte	0
+ 2414 0170 1B       		.uleb128 0x1b
+ 2415 0171 34       		.uleb128 0x34
+ 2416 0172 00       		.byte	0
+ 2417 0173 03       		.uleb128 0x3
+ 2418 0174 0E       		.uleb128 0xe
+ 2419 0175 3A       		.uleb128 0x3a
+ 2420 0176 0B       		.uleb128 0xb
+ 2421 0177 3B       		.uleb128 0x3b
+ 2422 0178 0B       		.uleb128 0xb
+ 2423 0179 49       		.uleb128 0x49
+ 2424 017a 13       		.uleb128 0x13
+ 2425 017b 3F       		.uleb128 0x3f
+ 2426 017c 19       		.uleb128 0x19
+ 2427 017d 02       		.uleb128 0x2
+ 2428 017e 18       		.uleb128 0x18
+ 2429 017f 00       		.byte	0
+ 2430 0180 00       		.byte	0
+ 2431 0181 1C       		.uleb128 0x1c
+ 2432 0182 2E       		.uleb128 0x2e
+ 2433 0183 00       		.byte	0
+ 2434 0184 3F       		.uleb128 0x3f
+ 2435 0185 19       		.uleb128 0x19
+ 2436 0186 3C       		.uleb128 0x3c
+ 2437 0187 19       		.uleb128 0x19
+ 2438 0188 6E       		.uleb128 0x6e
+ 2439 0189 0E       		.uleb128 0xe
+ 2440 018a 03       		.uleb128 0x3
+ 2441 018b 0E       		.uleb128 0xe
+ 2442 018c 3A       		.uleb128 0x3a
+ 2443 018d 0B       		.uleb128 0xb
+ 2444 018e 3B       		.uleb128 0x3b
+ 2445 018f 0B       		.uleb128 0xb
+ 2446 0190 00       		.byte	0
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 49
+
+
+ 2447 0191 00       		.byte	0
+ 2448 0192 1D       		.uleb128 0x1d
+ 2449 0193 2E       		.uleb128 0x2e
+ 2450 0194 00       		.byte	0
+ 2451 0195 3F       		.uleb128 0x3f
+ 2452 0196 19       		.uleb128 0x19
+ 2453 0197 3C       		.uleb128 0x3c
+ 2454 0198 19       		.uleb128 0x19
+ 2455 0199 6E       		.uleb128 0x6e
+ 2456 019a 0E       		.uleb128 0xe
+ 2457 019b 03       		.uleb128 0x3
+ 2458 019c 0E       		.uleb128 0xe
+ 2459 019d 3A       		.uleb128 0x3a
+ 2460 019e 0B       		.uleb128 0xb
+ 2461 019f 3B       		.uleb128 0x3b
+ 2462 01a0 05       		.uleb128 0x5
+ 2463 01a1 00       		.byte	0
+ 2464 01a2 00       		.byte	0
+ 2465 01a3 00       		.byte	0
+ 2466              		.section	.debug_loc,"",%progbits
+ 2467              	.Ldebug_loc0:
+ 2468              	.LLST0:
+ 2469 0000 08000000 		.4byte	.LVL0
+ 2470 0004 6C000000 		.4byte	.LVL15
+ 2471 0008 0200     		.2byte	0x2
+ 2472 000a 37       		.byte	0x37
+ 2473 000b 9F       		.byte	0x9f
+ 2474 000c 6C000000 		.4byte	.LVL15
+ 2475 0010 9E000000 		.4byte	.LVL20
+ 2476 0014 0100     		.2byte	0x1
+ 2477 0016 57       		.byte	0x57
+ 2478 0017 9E000000 		.4byte	.LVL20
+ 2479 001b A6000000 		.4byte	.LVL22
+ 2480 001f 0200     		.2byte	0x2
+ 2481 0021 37       		.byte	0x37
+ 2482 0022 9F       		.byte	0x9f
+ 2483 0023 A6000000 		.4byte	.LVL22
+ 2484 0027 A8000000 		.4byte	.LVL23
+ 2485 002b 0100     		.2byte	0x1
+ 2486 002d 57       		.byte	0x57
+ 2487 002e AA000000 		.4byte	.LVL24
+ 2488 0032 E0000000 		.4byte	.LVL28
+ 2489 0036 0100     		.2byte	0x1
+ 2490 0038 57       		.byte	0x57
+ 2491 0039 E0000000 		.4byte	.LVL28
+ 2492 003d F0000000 		.4byte	.LVL30
+ 2493 0041 0200     		.2byte	0x2
+ 2494 0043 37       		.byte	0x37
+ 2495 0044 9F       		.byte	0x9f
+ 2496 0045 00000000 		.4byte	0
+ 2497 0049 00000000 		.4byte	0
+ 2498              	.LLST1:
+ 2499 004d 08000000 		.4byte	.LVL0
+ 2500 0051 6C000000 		.4byte	.LVL15
+ 2501 0055 0200     		.2byte	0x2
+ 2502 0057 30       		.byte	0x30
+ 2503 0058 9F       		.byte	0x9f
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 50
+
+
+ 2504 0059 6C000000 		.4byte	.LVL15
+ 2505 005d E0000000 		.4byte	.LVL28
+ 2506 0061 0100     		.2byte	0x1
+ 2507 0063 55       		.byte	0x55
+ 2508 0064 E0000000 		.4byte	.LVL28
+ 2509 0068 F0000000 		.4byte	.LVL30
+ 2510 006c 0200     		.2byte	0x2
+ 2511 006e 30       		.byte	0x30
+ 2512 006f 9F       		.byte	0x9f
+ 2513 0070 00000000 		.4byte	0
+ 2514 0074 00000000 		.4byte	0
+ 2515              	.LLST2:
+ 2516 0078 0E000000 		.4byte	.LVL2
+ 2517 007c 12000000 		.4byte	.LVL3
+ 2518 0080 0200     		.2byte	0x2
+ 2519 0082 30       		.byte	0x30
+ 2520 0083 9F       		.byte	0x9f
+ 2521 0084 12000000 		.4byte	.LVL3
+ 2522 0088 23000000 		.4byte	.LVL5-1
+ 2523 008c 0100     		.2byte	0x1
+ 2524 008e 53       		.byte	0x53
+ 2525 008f 6C000000 		.4byte	.LVL15
+ 2526 0093 E0000000 		.4byte	.LVL28
+ 2527 0097 0100     		.2byte	0x1
+ 2528 0099 58       		.byte	0x58
+ 2529 009a 00000000 		.4byte	0
+ 2530 009e 00000000 		.4byte	0
+ 2531              	.LLST3:
+ 2532 00a2 08000000 		.4byte	.LVL0
+ 2533 00a6 34000000 		.4byte	.LVL8
+ 2534 00aa 0200     		.2byte	0x2
+ 2535 00ac 30       		.byte	0x30
+ 2536 00ad 9F       		.byte	0x9f
+ 2537 00ae 34000000 		.4byte	.LVL8
+ 2538 00b2 6C000000 		.4byte	.LVL15
+ 2539 00b6 0100     		.2byte	0x1
+ 2540 00b8 56       		.byte	0x56
+ 2541 00b9 78000000 		.4byte	.LVL17
+ 2542 00bd B0000000 		.4byte	.LVL25
+ 2543 00c1 0100     		.2byte	0x1
+ 2544 00c3 54       		.byte	0x54
+ 2545 00c4 E0000000 		.4byte	.LVL28
+ 2546 00c8 F0000000 		.4byte	.LVL30
+ 2547 00cc 0100     		.2byte	0x1
+ 2548 00ce 56       		.byte	0x56
+ 2549 00cf 00000000 		.4byte	0
+ 2550 00d3 00000000 		.4byte	0
+ 2551              	.LLST4:
+ 2552 00d7 64000000 		.4byte	.LVL46
+ 2553 00db 82000000 		.4byte	.LVL50
+ 2554 00df 0100     		.2byte	0x1
+ 2555 00e1 54       		.byte	0x54
+ 2556 00e2 08010000 		.4byte	.LVL63
+ 2557 00e6 12010000 		.4byte	.LVL64
+ 2558 00ea 0100     		.2byte	0x1
+ 2559 00ec 54       		.byte	0x54
+ 2560 00ed 9A010000 		.4byte	.LVL77
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 51
+
+
+ 2561 00f1 E4010000 		.4byte	.LVL84
+ 2562 00f5 0100     		.2byte	0x1
+ 2563 00f7 54       		.byte	0x54
+ 2564 00f8 0C020000 		.4byte	.LVL87
+ 2565 00fc 5C020000 		.4byte	.LFE37
+ 2566 0100 0100     		.2byte	0x1
+ 2567 0102 54       		.byte	0x54
+ 2568 0103 00000000 		.4byte	0
+ 2569 0107 00000000 		.4byte	0
+ 2570              		.section	.debug_aranges,"",%progbits
+ 2571 0000 24000000 		.4byte	0x24
+ 2572 0004 0200     		.2byte	0x2
+ 2573 0006 00000000 		.4byte	.Ldebug_info0
+ 2574 000a 04       		.byte	0x4
+ 2575 000b 00       		.byte	0
+ 2576 000c 0000     		.2byte	0
+ 2577 000e 0000     		.2byte	0
+ 2578 0010 00000000 		.4byte	.LFB36
+ 2579 0014 FC000000 		.4byte	.LFE36-.LFB36
+ 2580 0018 00000000 		.4byte	.LFB37
+ 2581 001c 5C020000 		.4byte	.LFE37-.LFB37
+ 2582 0020 00000000 		.4byte	0
+ 2583 0024 00000000 		.4byte	0
+ 2584              		.section	.debug_ranges,"",%progbits
+ 2585              	.Ldebug_ranges0:
+ 2586 0000 00000000 		.4byte	.LFB36
+ 2587 0004 FC000000 		.4byte	.LFE36
+ 2588 0008 00000000 		.4byte	.LFB37
+ 2589 000c 5C020000 		.4byte	.LFE37
+ 2590 0010 00000000 		.4byte	0
+ 2591 0014 00000000 		.4byte	0
+ 2592              		.section	.debug_line,"",%progbits
+ 2593              	.Ldebug_line0:
+ 2594 0000 3E030000 		.section	.debug_str,"MS",%progbits,1
+ 2594      02006C02 
+ 2594      00000201 
+ 2594      FB0E0D00 
+ 2594      01010101 
+ 2595              	.LASF109:
+ 2596 0000 6F757470 		.ascii	"outputstring1\000"
+ 2596      75747374 
+ 2596      72696E67 
+ 2596      3100
+ 2597              	.LASF110:
+ 2598 000e 6F757470 		.ascii	"outputstring2\000"
+ 2598      75747374 
+ 2598      72696E67 
+ 2598      3200
+ 2599              	.LASF24:
+ 2600 001c 4359424C 		.ascii	"CYBLE_EVT_STACK_BUSY_STATUS\000"
+ 2600      455F4556 
+ 2600      545F5354 
+ 2600      41434B5F 
+ 2600      42555359 
+ 2601              	.LASF12:
+ 2602 0038 75696E74 		.ascii	"uint16\000"
+ 2602      313600
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 52
+
+
+ 2603              	.LASF82:
+ 2604 003f 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_DATA_READ\000"
+ 2604      455F4556 
+ 2604      545F4C32 
+ 2604      4341505F 
+ 2604      43424643 
+ 2605              	.LASF94:
+ 2606 005e 4359424C 		.ascii	"CYBLE_CONN_HANDLE_T\000"
+ 2606      455F434F 
+ 2606      4E4E5F48 
+ 2606      414E444C 
+ 2606      455F5400 
+ 2607              	.LASF133:
+ 2608 0072 43794578 		.ascii	"CyExitCriticalSection\000"
+ 2608      69744372 
+ 2608      69746963 
+ 2608      616C5365 
+ 2608      6374696F 
+ 2609              	.LASF128:
+ 2610 0088 636F6E6E 		.ascii	"connectionHandle\000"
+ 2610      65637469 
+ 2610      6F6E4861 
+ 2610      6E646C65 
+ 2610      00
+ 2611              	.LASF148:
+ 2612 0099 73707269 		.ascii	"sprintf\000"
+ 2612      6E746600 
+ 2613              	.LASF36:
+ 2614 00a1 4359424C 		.ascii	"CYBLE_EVT_GAP_CONNECTION_UPDATE_COMPLETE\000"
+ 2614      455F4556 
+ 2614      545F4741 
+ 2614      505F434F 
+ 2614      4E4E4543 
+ 2615              	.LASF81:
+ 2616 00ca 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_DISCONN_CNF\000"
+ 2616      455F4556 
+ 2616      545F4C32 
+ 2616      4341505F 
+ 2616      43424643 
+ 2617              	.LASF0:
+ 2618 00eb 7369676E 		.ascii	"signed char\000"
+ 2618      65642063 
+ 2618      68617200 
+ 2619              	.LASF66:
+ 2620 00f7 4359424C 		.ascii	"CYBLE_EVT_GATTS_EXEC_WRITE_REQ\000"
+ 2620      455F4556 
+ 2620      545F4741 
+ 2620      5454535F 
+ 2620      45584543 
+ 2621              	.LASF105:
+ 2622 0116 70726F78 		.ascii	"proximidad\000"
+ 2622      696D6964 
+ 2622      616400
+ 2623              	.LASF21:
+ 2624 0121 4359424C 		.ascii	"CYBLE_EVT_TIMEOUT\000"
+ 2624      455F4556 
+ 2624      545F5449 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 53
+
+
+ 2624      4D454F55 
+ 2624      5400
+ 2625              	.LASF4:
+ 2626 0133 6C6F6E67 		.ascii	"long int\000"
+ 2626      20696E74 
+ 2626      00
+ 2627              	.LASF151:
+ 2628 013c 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 2628      43313120 
+ 2628      352E342E 
+ 2628      31203230 
+ 2628      31363036 
+ 2629 016f 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m0 -mthumb -g -O"
+ 2629      20726576 
+ 2629      6973696F 
+ 2629      6E203233 
+ 2629      37373135 
+ 2630 01a2 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 2630      66756E63 
+ 2630      74696F6E 
+ 2630      2D736563 
+ 2630      74696F6E 
+ 2631              	.LASF7:
+ 2632 01ca 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 2632      206C6F6E 
+ 2632      6720756E 
+ 2632      7369676E 
+ 2632      65642069 
+ 2633              	.LASF96:
+ 2634 01e1 4359424C 		.ascii	"CYBLE_GATT_VALUE_T\000"
+ 2634      455F4741 
+ 2634      54545F56 
+ 2634      414C5545 
+ 2634      5F5400
+ 2635              	.LASF23:
+ 2636 01f4 4359424C 		.ascii	"CYBLE_EVT_HCI_STATUS\000"
+ 2636      455F4556 
+ 2636      545F4843 
+ 2636      495F5354 
+ 2636      41545553 
+ 2637              	.LASF119:
+ 2638 0209 43617053 		.ascii	"CapSense_sensorSignal\000"
+ 2638      656E7365 
+ 2638      5F73656E 
+ 2638      736F7253 
+ 2638      69676E61 
+ 2639              	.LASF37:
+ 2640 021f 4359424C 		.ascii	"CYBLE_EVT_GAPC_SCAN_START_STOP\000"
+ 2640      455F4556 
+ 2640      545F4741 
+ 2640      50435F53 
+ 2640      43414E5F 
+ 2641              	.LASF86:
+ 2642 023e 4359424C 		.ascii	"CYBLE_EVT_PENDING_FLASH_WRITE\000"
+ 2642      455F4556 
+ 2642      545F5045 
+ 2642      4E44494E 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 54
+
+
+ 2642      475F464C 
+ 2643              	.LASF120:
+ 2644 025c 73746172 		.ascii	"startNotificationHumidity\000"
+ 2644      744E6F74 
+ 2644      69666963 
+ 2644      6174696F 
+ 2644      6E48756D 
+ 2645              	.LASF147:
+ 2646 0276 4C43445F 		.ascii	"LCD_print\000"
+ 2646      7072696E 
+ 2646      7400
+ 2647              	.LASF75:
+ 2648 0280 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CONN_PARAM_UPDATE_REQ\000"
+ 2648      455F4556 
+ 2648      545F4C32 
+ 2648      4341505F 
+ 2648      434F4E4E 
+ 2649              	.LASF140:
+ 2650 02a6 43617053 		.ascii	"CapSense_UpdateEnabledBaselines\000"
+ 2650      656E7365 
+ 2650      5F557064 
+ 2650      61746545 
+ 2650      6E61626C 
+ 2651              	.LASF39:
+ 2652 02c6 4359424C 		.ascii	"CYBLE_EVT_GAP_NUMERIC_COMPARISON_REQUEST\000"
+ 2652      455F4556 
+ 2652      545F4741 
+ 2652      505F4E55 
+ 2652      4D455249 
+ 2653              	.LASF84:
+ 2654 02ef 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_TX_CREDIT_IND\000"
+ 2654      455F4556 
+ 2654      545F4C32 
+ 2654      4341505F 
+ 2654      43424643 
+ 2655              	.LASF6:
+ 2656 0312 6C6F6E67 		.ascii	"long long int\000"
+ 2656      206C6F6E 
+ 2656      6720696E 
+ 2656      7400
+ 2657              	.LASF149:
+ 2658 0320 4379426C 		.ascii	"CyBle_GattsNotification\000"
+ 2658      655F4761 
+ 2658      7474734E 
+ 2658      6F746966 
+ 2658      69636174 
+ 2659              	.LASF20:
+ 2660 0338 4359424C 		.ascii	"CYBLE_EVT_STACK_ON\000"
+ 2660      455F4556 
+ 2660      545F5354 
+ 2660      41434B5F 
+ 2660      4F4E00
+ 2661              	.LASF153:
+ 2662 034b 433A5C55 		.ascii	"C:\\Users\\AntonioFrancisco\\Desktop\\TFG Bluetooth"
+ 2662      73657273 
+ 2662      5C416E74 
+ 2662      6F6E696F 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 55
+
+
+ 2662      4672616E 
+ 2663 037a 204C6F77 		.ascii	" Low Energy\\TFG PSoC\\TFG_BluetoothLowEnergy\\Blue"
+ 2663      20456E65 
+ 2663      7267795C 
+ 2663      54464720 
+ 2663      50536F43 
+ 2664 03aa 746F6F74 		.ascii	"toothLowEnergy\\TFG_BluetoothLowEnergy.cydsn\000"
+ 2664      684C6F77 
+ 2664      456E6572 
+ 2664      67795C54 
+ 2664      46475F42 
+ 2665              	.LASF95:
+ 2666 03d6 61637475 		.ascii	"actualLen\000"
+ 2666      616C4C65 
+ 2666      6E00
+ 2667              	.LASF27:
+ 2668 03e0 4359424C 		.ascii	"CYBLE_EVT_GAP_AUTH_REQ\000"
+ 2668      455F4556 
+ 2668      545F4741 
+ 2668      505F4155 
+ 2668      54485F52 
+ 2669              	.LASF59:
+ 2670 03f7 4359424C 		.ascii	"CYBLE_EVT_GATTC_READ_RSP\000"
+ 2670      455F4556 
+ 2670      545F4741 
+ 2670      5454435F 
+ 2670      52454144 
+ 2671              	.LASF64:
+ 2672 0410 4359424C 		.ascii	"CYBLE_EVT_GATTS_WRITE_CMD_REQ\000"
+ 2672      455F4556 
+ 2672      545F4741 
+ 2672      5454535F 
+ 2672      57524954 
+ 2673              	.LASF32:
+ 2674 042e 4359424C 		.ascii	"CYBLE_EVT_GAPP_ADVERTISEMENT_START_STOP\000"
+ 2674      455F4556 
+ 2674      545F4741 
+ 2674      50505F41 
+ 2674      44564552 
+ 2675              	.LASF125:
+ 2676 0456 6E6F7469 		.ascii	"notificationHandle\000"
+ 2676      66696361 
+ 2676      74696F6E 
+ 2676      48616E64 
+ 2676      6C6500
+ 2677              	.LASF11:
+ 2678 0469 75696E74 		.ascii	"uint8\000"
+ 2678      3800
+ 2679              	.LASF67:
+ 2680 046f 4359424C 		.ascii	"CYBLE_EVT_GATTC_EXEC_WRITE_RSP\000"
+ 2680      455F4556 
+ 2680      545F4741 
+ 2680      5454435F 
+ 2680      45584543 
+ 2681              	.LASF15:
+ 2682 048e 646F7562 		.ascii	"double\000"
+ 2682      6C6500
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 56
+
+
+ 2683              	.LASF111:
+ 2684 0495 74656D70 		.ascii	"temperatura\000"
+ 2684      65726174 
+ 2684      75726100 
+ 2685              	.LASF101:
+ 2686 04a1 49537461 		.ascii	"IState\000"
+ 2686      746500
+ 2687              	.LASF102:
+ 2688 04a8 62797465 		.ascii	"bytes\000"
+ 2688      7300
+ 2689              	.LASF90:
+ 2690 04ae 4359424C 		.ascii	"CYBLE_EVT_MAX\000"
+ 2690      455F4556 
+ 2690      545F4D41 
+ 2690      5800
+ 2691              	.LASF9:
+ 2692 04bc 5F5F7569 		.ascii	"__uint32_t\000"
+ 2692      6E743332 
+ 2692      5F7400
+ 2693              	.LASF92:
+ 2694 04c7 62644861 		.ascii	"bdHandle\000"
+ 2694      6E646C65 
+ 2694      00
+ 2695              	.LASF98:
+ 2696 04d0 61747472 		.ascii	"attrHandle\000"
+ 2696      48616E64 
+ 2696      6C6500
+ 2697              	.LASF108:
+ 2698 04db 6F757470 		.ascii	"outputstring\000"
+ 2698      75747374 
+ 2698      72696E67 
+ 2698      00
+ 2699              	.LASF85:
+ 2700 04e8 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_DATA_WRITE_IND\000"
+ 2700      455F4556 
+ 2700      545F4C32 
+ 2700      4341505F 
+ 2700      43424643 
+ 2701              	.LASF47:
+ 2702 050c 4359424C 		.ascii	"CYBLE_EVT_GAP_SCAN_REQ_RECVD\000"
+ 2702      455F4556 
+ 2702      545F4741 
+ 2702      505F5343 
+ 2702      414E5F52 
+ 2703              	.LASF97:
+ 2704 0529 76616C75 		.ascii	"value\000"
+ 2704      6500
+ 2705              	.LASF150:
+ 2706 052f 4379426C 		.ascii	"CyBle_GattsWriteAttributeValue\000"
+ 2706      655F4761 
+ 2706      74747357 
+ 2706      72697465 
+ 2706      41747472 
+ 2707              	.LASF74:
+ 2708 054e 4359424C 		.ascii	"CYBLE_EVT_GATTC_LONG_PROCEDURE_END\000"
+ 2708      455F4556 
+ 2708      545F4741 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 57
+
+
+ 2708      5454435F 
+ 2708      4C4F4E47 
+ 2709              	.LASF114:
+ 2710 0571 74656D70 		.ascii	"temperaturaant\000"
+ 2710      65726174 
+ 2710      75726161 
+ 2710      6E7400
+ 2711              	.LASF72:
+ 2712 0580 4359424C 		.ascii	"CYBLE_EVT_GATTC_STOP_CMD_COMPLETE\000"
+ 2712      455F4556 
+ 2712      545F4741 
+ 2712      5454435F 
+ 2712      53544F50 
+ 2713              	.LASF107:
+ 2714 05a2 70726F78 		.ascii	"proximidadant\000"
+ 2714      696D6964 
+ 2714      6164616E 
+ 2714      7400
+ 2715              	.LASF137:
+ 2716 05b0 43617053 		.ascii	"CapSense_Start\000"
+ 2716      656E7365 
+ 2716      5F537461 
+ 2716      727400
+ 2717              	.LASF116:
+ 2718 05bf 68756D65 		.ascii	"humedad1\000"
+ 2718      64616431 
+ 2718      00
+ 2719              	.LASF87:
+ 2720 05c8 4359424C 		.ascii	"CYBLE_EVT_LE_PING_AUTH_TIMEOUT\000"
+ 2720      455F4556 
+ 2720      545F4C45 
+ 2720      5F50494E 
+ 2720      475F4155 
+ 2721              	.LASF136:
+ 2722 05e7 62656769 		.ascii	"begin\000"
+ 2722      6E00
+ 2723              	.LASF5:
+ 2724 05ed 6C6F6E67 		.ascii	"long unsigned int\000"
+ 2724      20756E73 
+ 2724      69676E65 
+ 2724      6420696E 
+ 2724      7400
+ 2725              	.LASF46:
+ 2726 05ff 4359424C 		.ascii	"CYBLE_EVT_GAP_CONN_ESTB\000"
+ 2726      455F4556 
+ 2726      545F4741 
+ 2726      505F434F 
+ 2726      4E4E5F45 
+ 2727              	.LASF104:
+ 2728 0617 74696D65 		.ascii	"timeout\000"
+ 2728      6F757400 
+ 2729              	.LASF54:
+ 2730 061f 4359424C 		.ascii	"CYBLE_EVT_GATTC_XCHNG_MTU_RSP\000"
+ 2730      455F4556 
+ 2730      545F4741 
+ 2730      5454435F 
+ 2730      5843484E 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 58
+
+
+ 2731              	.LASF71:
+ 2732 063d 4359424C 		.ascii	"CYBLE_EVT_GATTS_DATA_SIGNED_CMD_REQ\000"
+ 2732      455F4556 
+ 2732      545F4741 
+ 2732      5454535F 
+ 2732      44415441 
+ 2733              	.LASF129:
+ 2734 0661 4379456E 		.ascii	"CyEnterCriticalSection\000"
+ 2734      74657243 
+ 2734      72697469 
+ 2734      63616C53 
+ 2734      65637469 
+ 2735              	.LASF118:
+ 2736 0678 68756D65 		.ascii	"humedadant\000"
+ 2736      64616461 
+ 2736      6E7400
+ 2737              	.LASF3:
+ 2738 0683 73686F72 		.ascii	"short unsigned int\000"
+ 2738      7420756E 
+ 2738      7369676E 
+ 2738      65642069 
+ 2738      6E7400
+ 2739              	.LASF19:
+ 2740 0696 4359424C 		.ascii	"CYBLE_EVT_HOST_INVALID\000"
+ 2740      455F4556 
+ 2740      545F484F 
+ 2740      53545F49 
+ 2740      4E56414C 
+ 2741              	.LASF57:
+ 2742 06ad 4359424C 		.ascii	"CYBLE_EVT_GATTC_FIND_INFO_RSP\000"
+ 2742      455F4556 
+ 2742      545F4741 
+ 2742      5454435F 
+ 2742      46494E44 
+ 2743              	.LASF25:
+ 2744 06cb 4359424C 		.ascii	"CYBLE_EVT_MEMORY_REQUEST\000"
+ 2744      455F4556 
+ 2744      545F4D45 
+ 2744      4D4F5259 
+ 2744      5F524551 
+ 2745              	.LASF28:
+ 2746 06e4 4359424C 		.ascii	"CYBLE_EVT_GAP_PASSKEY_ENTRY_REQUEST\000"
+ 2746      455F4556 
+ 2746      545F4741 
+ 2746      505F5041 
+ 2746      53534B45 
+ 2747              	.LASF33:
+ 2748 0708 4359424C 		.ascii	"CYBLE_EVT_GAP_DEVICE_CONNECTED\000"
+ 2748      455F4556 
+ 2748      545F4741 
+ 2748      505F4445 
+ 2748      56494345 
+ 2749              	.LASF152:
+ 2750 0727 6D61696E 		.ascii	"main.c\000"
+ 2750      2E6300
+ 2751              	.LASF62:
+ 2752 072e 4359424C 		.ascii	"CYBLE_EVT_GATTS_WRITE_REQ\000"
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 59
+
+
+ 2752      455F4556 
+ 2752      545F4741 
+ 2752      5454535F 
+ 2752      57524954 
+ 2753              	.LASF48:
+ 2754 0748 4359424C 		.ascii	"CYBLE_EVT_GAP_AUTH_REQ_REPLY_ERR\000"
+ 2754      455F4556 
+ 2754      545F4741 
+ 2754      505F4155 
+ 2754      54485F52 
+ 2755              	.LASF143:
+ 2756 0769 4379426C 		.ascii	"CyBle_Start\000"
+ 2756      655F5374 
+ 2756      61727400 
+ 2757              	.LASF135:
+ 2758 0775 4C697175 		.ascii	"LiquidCrystal_I2C_init\000"
+ 2758      69644372 
+ 2758      79737461 
+ 2758      6C5F4932 
+ 2758      435F696E 
+ 2759              	.LASF103:
+ 2760 078c 63616C63 		.ascii	"calc\000"
+ 2760      00
+ 2761              	.LASF29:
+ 2762 0791 4359424C 		.ascii	"CYBLE_EVT_GAP_PASSKEY_DISPLAY_REQUEST\000"
+ 2762      455F4556 
+ 2762      545F4741 
+ 2762      505F5041 
+ 2762      53534B45 
+ 2763              	.LASF51:
+ 2764 07b7 4359424C 		.ascii	"CYBLE_EVT_GATT_CONNECT_IND\000"
+ 2764      455F4556 
+ 2764      545F4741 
+ 2764      54545F43 
+ 2764      4F4E4E45 
+ 2765              	.LASF112:
+ 2766 07d2 74656D70 		.ascii	"temperatura1\000"
+ 2766      65726174 
+ 2766      75726131 
+ 2766      00
+ 2767              	.LASF113:
+ 2768 07df 74656D70 		.ascii	"temperatura2\000"
+ 2768      65726174 
+ 2768      75726132 
+ 2768      00
+ 2769              	.LASF77:
+ 2770 07ec 4359424C 		.ascii	"CYBLE_EVT_L2CAP_COMMAND_REJ\000"
+ 2770      455F4556 
+ 2770      545F4C32 
+ 2770      4341505F 
+ 2770      434F4D4D 
+ 2771              	.LASF26:
+ 2772 0808 4359424C 		.ascii	"CYBLE_EVT_GAPC_SCAN_PROGRESS_RESULT\000"
+ 2772      455F4556 
+ 2772      545F4741 
+ 2772      50435F53 
+ 2772      43414E5F 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 60
+
+
+ 2773              	.LASF93:
+ 2774 082c 61747449 		.ascii	"attId\000"
+ 2774      6400
+ 2775              	.LASF122:
+ 2776 0832 73746172 		.ascii	"startNotificationProximity\000"
+ 2776      744E6F74 
+ 2776      69666963 
+ 2776      6174696F 
+ 2776      6E50726F 
+ 2777              	.LASF49:
+ 2778 084d 4359424C 		.ascii	"CYBLE_EVT_GAP_SMP_LOC_P256_KEYS_GEN_AND_SET_COMPLET"
+ 2778      455F4556 
+ 2778      545F4741 
+ 2778      505F534D 
+ 2778      505F4C4F 
+ 2779 0880 4500     		.ascii	"E\000"
+ 2780              	.LASF78:
+ 2781 0882 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_CONN_IND\000"
+ 2781      455F4556 
+ 2781      545F4C32 
+ 2781      4341505F 
+ 2781      43424643 
+ 2782              	.LASF56:
+ 2783 08a0 4359424C 		.ascii	"CYBLE_EVT_GATTC_READ_BY_TYPE_RSP\000"
+ 2783      455F4556 
+ 2783      545F4741 
+ 2783      5454435F 
+ 2783      52454144 
+ 2784              	.LASF17:
+ 2785 08c1 73697A65 		.ascii	"sizetype\000"
+ 2785      74797065 
+ 2785      00
+ 2786              	.LASF138:
+ 2787 08ca 43617053 		.ascii	"CapSense_EnableWidget\000"
+ 2787      656E7365 
+ 2787      5F456E61 
+ 2787      626C6557 
+ 2787      69646765 
+ 2788              	.LASF145:
+ 2789 08e0 636C6561 		.ascii	"clear\000"
+ 2789      7200
+ 2790              	.LASF31:
+ 2791 08e6 4359424C 		.ascii	"CYBLE_EVT_GAP_AUTH_FAILED\000"
+ 2791      455F4556 
+ 2791      545F4741 
+ 2791      505F4155 
+ 2791      54485F46 
+ 2792              	.LASF63:
+ 2793 0900 4359424C 		.ascii	"CYBLE_EVT_GATTC_WRITE_RSP\000"
+ 2793      455F4556 
+ 2793      545F4741 
+ 2793      5454435F 
+ 2793      57524954 
+ 2794              	.LASF44:
+ 2795 091a 4359424C 		.ascii	"CYBLE_EVT_GAPC_DIRECT_ADV_REPORT\000"
+ 2795      455F4556 
+ 2795      545F4741 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 61
+
+
+ 2795      50435F44 
+ 2795      49524543 
+ 2796              	.LASF42:
+ 2797 093b 4359424C 		.ascii	"CYBLE_EVT_GAP_DATA_LENGTH_CHANGE\000"
+ 2797      455F4556 
+ 2797      545F4741 
+ 2797      505F4441 
+ 2797      54415F4C 
+ 2798              	.LASF123:
+ 2799 095c 64657669 		.ascii	"deviceConnected\000"
+ 2799      6365436F 
+ 2799      6E6E6563 
+ 2799      74656400 
+ 2800              	.LASF121:
+ 2801 096c 73746172 		.ascii	"startNotificationTemperature\000"
+ 2801      744E6F74 
+ 2801      69666963 
+ 2801      6174696F 
+ 2801      6E54656D 
+ 2802              	.LASF144:
+ 2803 0989 4379426C 		.ascii	"CyBle_ProcessEvents\000"
+ 2803      655F5072 
+ 2803      6F636573 
+ 2803      73457665 
+ 2803      6E747300 
+ 2804              	.LASF30:
+ 2805 099d 4359424C 		.ascii	"CYBLE_EVT_GAP_AUTH_COMPLETE\000"
+ 2805      455F4556 
+ 2805      545F4741 
+ 2805      505F4155 
+ 2805      54485F43 
+ 2806              	.LASF68:
+ 2807 09b9 4359424C 		.ascii	"CYBLE_EVT_GATTC_HANDLE_VALUE_NTF\000"
+ 2807      455F4556 
+ 2807      545F4741 
+ 2807      5454435F 
+ 2807      48414E44 
+ 2808              	.LASF99:
+ 2809 09da 4359424C 		.ascii	"CYBLE_GATT_HANDLE_VALUE_PAIR_T\000"
+ 2809      455F4741 
+ 2809      54545F48 
+ 2809      414E444C 
+ 2809      455F5641 
+ 2810              	.LASF106:
+ 2811 09f9 6D61785F 		.ascii	"max_proximidad\000"
+ 2811      70726F78 
+ 2811      696D6964 
+ 2811      616400
+ 2812              	.LASF79:
+ 2813 0a08 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_CONN_CNF\000"
+ 2813      455F4556 
+ 2813      545F4C32 
+ 2813      4341505F 
+ 2813      43424643 
+ 2814              	.LASF55:
+ 2815 0a26 4359424C 		.ascii	"CYBLE_EVT_GATTC_READ_BY_GROUP_TYPE_RSP\000"
+ 2815      455F4556 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 62
+
+
+ 2815      545F4741 
+ 2815      5454435F 
+ 2815      52454144 
+ 2816              	.LASF14:
+ 2817 0a4d 666C6F61 		.ascii	"float\000"
+ 2817      7400
+ 2818              	.LASF124:
+ 2819 0a53 41646472 		.ascii	"Addr\000"
+ 2819      00
+ 2820              	.LASF1:
+ 2821 0a58 756E7369 		.ascii	"unsigned char\000"
+ 2821      676E6564 
+ 2821      20636861 
+ 2821      7200
+ 2822              	.LASF139:
+ 2823 0a66 43617053 		.ascii	"CapSense_InitializeAllBaselines\000"
+ 2823      656E7365 
+ 2823      5F496E69 
+ 2823      7469616C 
+ 2823      697A6541 
+ 2824              	.LASF40:
+ 2825 0a86 4359424C 		.ascii	"CYBLE_EVT_GAP_KEYPRESS_NOTIFICATION\000"
+ 2825      455F4556 
+ 2825      545F4741 
+ 2825      505F4B45 
+ 2825      59505245 
+ 2826              	.LASF132:
+ 2827 0aaa 4448545F 		.ascii	"DHT_Read\000"
+ 2827      52656164 
+ 2827      00
+ 2828              	.LASF2:
+ 2829 0ab3 73686F72 		.ascii	"short int\000"
+ 2829      7420696E 
+ 2829      7400
+ 2830              	.LASF69:
+ 2831 0abd 4359424C 		.ascii	"CYBLE_EVT_GATTC_HANDLE_VALUE_IND\000"
+ 2831      455F4556 
+ 2831      545F4741 
+ 2831      5454435F 
+ 2831      48414E44 
+ 2832              	.LASF88:
+ 2833 0ade 4359424C 		.ascii	"CYBLE_EVT_HCI_PKT\000"
+ 2833      455F4556 
+ 2833      545F4843 
+ 2833      495F504B 
+ 2833      5400
+ 2834              	.LASF154:
+ 2835 0af0 6C656374 		.ascii	"lectura_DHT22\000"
+ 2835      7572615F 
+ 2835      44485432 
+ 2835      3200
+ 2836              	.LASF65:
+ 2837 0afe 4359424C 		.ascii	"CYBLE_EVT_GATTS_PREP_WRITE_REQ\000"
+ 2837      455F4556 
+ 2837      545F4741 
+ 2837      5454535F 
+ 2837      50524550 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 63
+
+
+ 2838              	.LASF35:
+ 2839 0b1d 4359424C 		.ascii	"CYBLE_EVT_GAP_ENCRYPT_CHANGE\000"
+ 2839      455F4556 
+ 2839      545F4741 
+ 2839      505F454E 
+ 2839      43525950 
+ 2840              	.LASF70:
+ 2841 0b3a 4359424C 		.ascii	"CYBLE_EVT_GATTS_HANDLE_VALUE_CNF\000"
+ 2841      455F4556 
+ 2841      545F4741 
+ 2841      5454535F 
+ 2841      48414E44 
+ 2842              	.LASF50:
+ 2843 0b5b 4359424C 		.ascii	"CYBLE_EVT_GATTC_ERROR_RSP\000"
+ 2843      455F4556 
+ 2843      545F4741 
+ 2843      5454435F 
+ 2843      4552524F 
+ 2844              	.LASF45:
+ 2845 0b75 4359424C 		.ascii	"CYBLE_EVT_GAP_SMP_NEGOTIATED_AUTH_INFO\000"
+ 2845      455F4556 
+ 2845      545F4741 
+ 2845      505F534D 
+ 2845      505F4E45 
+ 2846              	.LASF18:
+ 2847 0b9c 6C6F6E67 		.ascii	"long double\000"
+ 2847      20646F75 
+ 2847      626C6500 
+ 2848              	.LASF16:
+ 2849 0ba8 63686172 		.ascii	"char\000"
+ 2849      00
+ 2850              	.LASF61:
+ 2851 0bad 4359424C 		.ascii	"CYBLE_EVT_GATTC_READ_MULTI_RSP\000"
+ 2851      455F4556 
+ 2851      545F4741 
+ 2851      5454435F 
+ 2851      52454144 
+ 2852              	.LASF34:
+ 2853 0bcc 4359424C 		.ascii	"CYBLE_EVT_GAP_DEVICE_DISCONNECTED\000"
+ 2853      455F4556 
+ 2853      545F4741 
+ 2853      505F4445 
+ 2853      56494345 
+ 2854              	.LASF8:
+ 2855 0bee 756E7369 		.ascii	"unsigned int\000"
+ 2855      676E6564 
+ 2855      20696E74 
+ 2855      00
+ 2856              	.LASF73:
+ 2857 0bfb 4359424C 		.ascii	"CYBLE_EVT_GATTS_READ_CHAR_VAL_ACCESS_REQ\000"
+ 2857      455F4556 
+ 2857      545F4741 
+ 2857      5454535F 
+ 2857      52454144 
+ 2858              	.LASF83:
+ 2859 0c24 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_RX_CREDIT_IND\000"
+ 2859      455F4556 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 64
+
+
+ 2859      545F4C32 
+ 2859      4341505F 
+ 2859      43424643 
+ 2860              	.LASF117:
+ 2861 0c47 68756D65 		.ascii	"humedad2\000"
+ 2861      64616432 
+ 2861      00
+ 2862              	.LASF146:
+ 2863 0c50 73657443 		.ascii	"setCursor\000"
+ 2863      7572736F 
+ 2863      7200
+ 2864              	.LASF22:
+ 2865 0c5a 4359424C 		.ascii	"CYBLE_EVT_HARDWARE_ERROR\000"
+ 2865      455F4556 
+ 2865      545F4841 
+ 2865      52445741 
+ 2865      52455F45 
+ 2866              	.LASF100:
+ 2867 0c73 4359424C 		.ascii	"CYBLE_GATTS_HANDLE_VALUE_NTF_T\000"
+ 2867      455F4741 
+ 2867      5454535F 
+ 2867      48414E44 
+ 2867      4C455F56 
+ 2868              	.LASF41:
+ 2869 0c92 4359424C 		.ascii	"CYBLE_EVT_GAP_OOB_GENERATED_NOTIFICATION\000"
+ 2869      455F4556 
+ 2869      545F4741 
+ 2869      505F4F4F 
+ 2869      425F4745 
+ 2870              	.LASF131:
+ 2871 0cbb 43794465 		.ascii	"CyDelay\000"
+ 2871      6C617900 
+ 2872              	.LASF10:
+ 2873 0cc3 75696E74 		.ascii	"uint32_t\000"
+ 2873      33325F74 
+ 2873      00
+ 2874              	.LASF53:
+ 2875 0ccc 4359424C 		.ascii	"CYBLE_EVT_GATTS_XCNHG_MTU_REQ\000"
+ 2875      455F4556 
+ 2875      545F4741 
+ 2875      5454535F 
+ 2875      58434E48 
+ 2876              	.LASF115:
+ 2877 0cea 68756D65 		.ascii	"humedad\000"
+ 2877      64616400 
+ 2878              	.LASF60:
+ 2879 0cf2 4359424C 		.ascii	"CYBLE_EVT_GATTC_READ_BLOB_RSP\000"
+ 2879      455F4556 
+ 2879      545F4741 
+ 2879      5454435F 
+ 2879      52454144 
+ 2880              	.LASF134:
+ 2881 0d10 4932435F 		.ascii	"I2C_Start\000"
+ 2881      53746172 
+ 2881      7400
+ 2882              	.LASF13:
+ 2883 0d1a 696E7431 		.ascii	"int16\000"
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 65
+
+
+ 2883      3600
+ 2884              	.LASF58:
+ 2885 0d20 4359424C 		.ascii	"CYBLE_EVT_GATTC_FIND_BY_TYPE_VALUE_RSP\000"
+ 2885      455F4556 
+ 2885      545F4741 
+ 2885      5454435F 
+ 2885      46494E44 
+ 2886              	.LASF38:
+ 2887 0d47 4359424C 		.ascii	"CYBLE_EVT_GAP_KEYINFO_EXCHNGE_CMPLT\000"
+ 2887      455F4556 
+ 2887      545F4741 
+ 2887      505F4B45 
+ 2887      59494E46 
+ 2888              	.LASF80:
+ 2889 0d6b 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CBFC_DISCONN_IND\000"
+ 2889      455F4556 
+ 2889      545F4C32 
+ 2889      4341505F 
+ 2889      43424643 
+ 2890              	.LASF141:
+ 2891 0d8c 43617053 		.ascii	"CapSense_ScanEnabledWidgets\000"
+ 2891      656E7365 
+ 2891      5F536361 
+ 2891      6E456E61 
+ 2891      626C6564 
+ 2892              	.LASF76:
+ 2893 0da8 4359424C 		.ascii	"CYBLE_EVT_L2CAP_CONN_PARAM_UPDATE_RSP\000"
+ 2893      455F4556 
+ 2893      545F4C32 
+ 2893      4341505F 
+ 2893      434F4E4E 
+ 2894              	.LASF155:
+ 2895 0dce 6D61696E 		.ascii	"main\000"
+ 2895      00
+ 2896              	.LASF43:
+ 2897 0dd3 4359424C 		.ascii	"CYBLE_EVT_GAP_ENHANCE_CONN_COMPLETE\000"
+ 2897      455F4556 
+ 2897      545F4741 
+ 2897      505F454E 
+ 2897      48414E43 
+ 2898              	.LASF91:
+ 2899 0df7 4359424C 		.ascii	"CYBLE_GATT_DB_ATTR_HANDLE_T\000"
+ 2899      455F4741 
+ 2899      54545F44 
+ 2899      425F4154 
+ 2899      54525F48 
+ 2900              	.LASF126:
+ 2901 0e13 6E6F7469 		.ascii	"notificationHandle1\000"
+ 2901      66696361 
+ 2901      74696F6E 
+ 2901      48616E64 
+ 2901      6C653100 
+ 2902              	.LASF127:
+ 2903 0e27 6E6F7469 		.ascii	"notificationHandle2\000"
+ 2903      66696361 
+ 2903      74696F6E 
+ 2903      48616E64 
+ARM GAS  C:\Users\ANTONI~1\AppData\Local\Temp\ccqbSE6S.s 			page 66
+
+
+ 2903      6C653200 
+ 2904              	.LASF52:
+ 2905 0e3b 4359424C 		.ascii	"CYBLE_EVT_GATT_DISCONNECT_IND\000"
+ 2905      455F4556 
+ 2905      545F4741 
+ 2905      54545F44 
+ 2905      4953434F 
+ 2906              	.LASF89:
+ 2907 0e59 4359424C 		.ascii	"CYBLE_EVT_FLASH_CORRUPT\000"
+ 2907      455F4556 
+ 2907      545F464C 
+ 2907      4153485F 
+ 2907      434F5252 
+ 2908              	.LASF142:
+ 2909 0e71 43617053 		.ascii	"CapSense_IsBusy\000"
+ 2909      656E7365 
+ 2909      5F497342 
+ 2909      75737900 
+ 2910              	.LASF130:
+ 2911 0e81 4448545F 		.ascii	"DHT_Write\000"
+ 2911      57726974 
+ 2911      6500
+ 2912              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran

@@ -1,0 +1,6 @@
+C:\Users\AntonioFrancisco\Desktop\TFG Bluetooth Low Energy\TFG PSoC\TFG_BluetoothLowEnergy\BluetoothLowEnergy\TFG_BluetoothLowEnergy.cydsn\TFG_BluetoothLowEnergy.cyprj|49753aa5-7aa1-4133-ba85-26c929937bcc
+C:\Program Files (x86)\Cypress\PSoC Creator\4.2\PSoC Creator\psoc\content\default\CyAnnotationLibrary\CyAnnotationLibrary.cylib\CyAnnotationLibrary.cyprj|74ff9276-dd75-4a56-a840-426a28d4e50d
+C:\Users\AntonioFrancisco\Documents\PSoC Creator\4.2\Downloads ( 4.2).cylib\Downloads ( 4.2).cyprj|cf36bbe6-57ab-4e57-9459-d8ad1b135d43
+C:\Program Files (x86)\Cypress\PSoC Creator\4.2\PSoC Creator\psoc\content\cycomponentlibraryupdates\CyComponentLibraryUpdates.cylib\CyComponentLibraryUpdates.cyprj|4815f7ee-04c4-4f3f-a77e-53ed6603f138
+C:\Program Files (x86)\Cypress\PSoC Creator\4.2\PSoC Creator\psoc\content\cycomponentlibrary\CyComponentLibrary.cylib\CyComponentLibrary.cyprj|bf00a1fd-f97d-4d12-858e-089df9eb72bc
+C:\Program Files (x86)\Cypress\PSoC Creator\4.2\PSoC Creator\psoc\content\cyprimitives\CyPrimitives.cylib\CyPrimitives.cyprj|3e330bbe-2734-485a-a170-a4e8fd0a89c5
